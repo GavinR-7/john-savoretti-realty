@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/*
+  THE DESIGN SYSTEM LIVES HERE.
+  Tailwind v4 has no tailwind.config.js — you define custom tokens in CSS with
+  @theme, and Tailwind generates utility classes from them automatically:
+  --color-atlantic  ->  bg-atlantic, text-atlantic, border-atlantic, ...
+  --font-display    ->  font-display
+
+  Palette ("Long Island Atlantic"):
+    harbor   — near-black navy, footer + deepest surfaces
+    atlantic — the primary deep navy (brand workhorse)
+    channel  — lighter navy for hovers/secondary
+    fog      — cool pale blue-gray for alternating sections
+    ink/mist — body text + muted text (blue-cast neutrals, not pure gray)
+    brass    — the warm accent. brass-deep for small text on white (contrast),
+               brass-light for accents on navy.
+*/
+@theme inline {
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-public-sans);
+
+  --color-harbor: #0b1e2e;
+  --color-atlantic: #14324c;
+  --color-channel: #28567c;
+  --color-fog: #f2f5f7;
+  --color-ink: #1a2630;
+  --color-mist: #556675;
+  --color-brass: #b08a3e;
+  --color-brass-deep: #8a6a28;
+  --color-brass-light: #dcbe7e;
+}
+
+/* Smooth anchor scrolling, but only for people who haven't asked for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* The sticky header is ~72px tall; without this, anchor links would hide
+   section headings underneath it. */
+section[id] {
+  scroll-margin-top: 88px;
+}
+
+/* One consistent, visible keyboard-focus style across the whole site. */
+:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-brass-light);
+  color: var(--color-harbor);
+}
+
+/* --- Signature element: the fill-in-the-blank "What's my home worth?" form ---
+   These inputs sit inside a giant serif sentence, so they inherit the serif
+   font and just draw an underline. */
+.inline-input {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 0;
+  color: #fff;
+  font: inherit;
+  padding: 0 0.15em 0.05em;
+  transition: border-color 150ms ease;
+}
+.inline-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+.inline-input:focus {
+  outline: none;
+  border-bottom-color: var(--color-brass-light);
+}
+/* Native <select> dropdown panels render with the OS's own colors,
+   so option text needs a dark color to stay readable. */
+.inline-input option {
+  color: var(--color-ink);
+}
+
+/* --- Scroll-reveal animation (used by components/Reveal.tsx) --- */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 600ms ease,
+    transform 600ms ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
