@@ -3,8 +3,9 @@
 /*
   Sticky header. Client component because it tracks two pieces of state:
   whether the page has scrolled (to add a shadow) and whether the mobile
-  menu is open. Nav links point at homepage section ids ("/#listings") so
-  they also work from the /areas/* pages.
+  menu is open. Most nav links point at homepage section ids ("/#listings")
+  so they also work from the /areas/* pages; Rentals and Commercial route
+  to their own pages instead.
 */
 
 import Link from "next/link";
@@ -14,6 +15,8 @@ import { business } from "@/data/site";
 const navLinks = [
   { label: "Buy", href: "/#listings" },
   { label: "Sell", href: "/#home-value" },
+  { label: "Rentals", href: "/rentals" },
+  { label: "Commercial", href: "/commercial" },
   { label: "Areas we serve", href: "/#areas" },
   { label: "Our agents", href: "/#agents" },
   { label: "About", href: "/#about" },

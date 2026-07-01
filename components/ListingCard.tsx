@@ -30,7 +30,7 @@ export default function ListingCard({ listing }: { listing: Listing }) {
       <div className="flex flex-1 flex-col gap-2 p-5">
         <div className="flex items-baseline justify-between gap-2">
           <p className="font-display text-2xl font-semibold text-atlantic">
-            {formatPrice(listing.price)}
+            {formatPrice(listing.price, listing.dealType)}
           </p>
           <p className="text-xs font-medium uppercase tracking-wider text-mist">
             MLS #{listing.mls}

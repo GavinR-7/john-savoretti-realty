@@ -92,4 +92,19 @@ export const areas: Area[] = [
     blurb:
       "Classic Queens blocks of Tudors and row homes with quick access to the A train, the airport, and Resorts World.",
   },
+  {
+    slug: "baldwin",
+    name: "Baldwin",
+    county: "Nassau",
+    blurb:
+      "A well-connected South Shore suburb with spacious Capes, colonials, and split-levels, plus an easy LIRR commute and more attainable Nassau pricing.",
+  },
+  {
+    slug: "middle-village",
+    name: "Middle Village",
+    county: "Queens",
+    blurb:
+      "A quiet Queens enclave known for brick Tudors, attached homes, and tree-lined blocks near Juniper Valley Park, with the M train into Manhattan.",
+  },
+
 ];

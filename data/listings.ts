@@ -20,10 +20,11 @@ export type Listing = {
   town: string;
   areaSlug: string;
   price: number;
-  beds: number;
-  baths: number;
+  beds: number | null;
+  baths: number | null;
   style: string;
-  status: "For sale" | "Pending";
+  status: "For sale" |"For rent" | "Pending" | "Coming soon";
+  dealType: "sale" | "rent" | "commercial";
   image: string; // PLACEHOLDER — replace with real photos (see README)
   blurb: string; // PLACEHOLDER COPY — have John approve
 };
@@ -42,6 +43,7 @@ export const listings: Listing[] = [
     baths: 3,
     style: "Hi-Ranch",
     status: "For sale",
+    dealType: "sale",
     image: img("photo-1570129477492-45c003edd2be"),
     blurb:
       "Oversized hi-ranch with room for the whole family — flexible lower level, updated kitchen, and a commuter's dream location.",
@@ -56,6 +58,7 @@ export const listings: Listing[] = [
     baths: 3,
     style: "Tudor",
     status: "For sale",
+    dealType: "sale",
     image: img("photo-1576941089067-2de3c901e126"),
     blurb:
       "Storybook Tudor on a picture-perfect block — original character, modern systems, minutes to the village and the LIRR.",
@@ -70,6 +73,7 @@ export const listings: Listing[] = [
     baths: 5,
     style: "Colonial",
     status: "For sale",
+    dealType: "sale",
     image: img("photo-1598228723793-52759bba239c"),
     blurb:
       "Expansive five-bedroom colonial south of Merrick Road — sun-drenched layout, spa baths, and an entertainer's backyard.",
@@ -84,6 +88,7 @@ export const listings: Listing[] = [
     baths: 4,
     style: "Colonial",
     status: "For sale",
+    dealType: "sale",
     image: img("photo-1600596542815-ffad4c1539a9"),
     blurb:
       "Fully reimagined colonial steps from the village — chef's kitchen, four full baths, and nothing left to do but move in.",
@@ -98,6 +103,7 @@ export const listings: Listing[] = [
     baths: 3,
     style: "Colonial",
     status: "For sale",
+    dealType: "sale",
     image: img("photo-1568605114967-8130f3a36994"),
     blurb:
       "Wide-line colonial on one of Franklin Square's most established streets, around the corner from our flagship office.",
@@ -112,6 +118,7 @@ export const listings: Listing[] = [
     baths: 3,
     style: "Colonial",
     status: "For sale",
+    dealType: "sale",
     image: img("photo-1605146768851-eda79da39897"),
     blurb:
       "Five bedrooms in the heart of Suffolk's South Shore — space to spread out, close to the revitalized village downtown.",
@@ -126,6 +133,7 @@ export const listings: Listing[] = [
     baths: 1,
     style: "Cape Cod",
     status: "For sale",
+    dealType: "sale",
     image: img("photo-1572120360610-d971b9d7767c"),
     blurb:
       "Classic cape with great bones and real upside — an honest starter home in a town buyers keep coming back to.",
@@ -140,16 +148,53 @@ export const listings: Listing[] = [
     baths: 2,
     style: "Cape Cod",
     status: "Pending",
+    dealType: "sale",
     image: img("photo-1512917774080-9991f1c4c750"),
     blurb:
       "Expanded cape that went pending fast — proof of what the right prep and the right price do in this market.",
   },
+  {
+    id: "Baldwin",
+    mls: "7287745",
+    town: "Baldwin",
+    areaSlug: "baldwin",
+    price: 3750,
+    beds: null,
+    baths: null,
+    style: "House",
+    status: "For rent",
+    dealType: "commercial",
+    image: img("photo-1512917774080-9991f1c4c750"),
+    blurb:
+      "Updated office space for rent — reception and waiting area, 2 exam rooms plus an office, parking, and an elevator. Owner negotiable on customization time.",
+  },
+  {
+    id: "Middle-Village-A-frame",
+    mls: "7265985",
+    town: "Middle Village",
+    areaSlug: "middle-village",
+    price: 3950,
+    beds: 3,
+    baths: 2,
+    style: "A-frame",
+    status: "For sale",
+    dealType: "rent",
+    image: img("photo-1512917774080-9991f1c4c750"),
+    blurb:
+      "First Floor Apartment. Totally Renovated",
+  },
 ];
 
-export function formatPrice(n: number): string {
-  return n.toLocaleString("en-US", {
+export function formatPrice(price: number, dealType: string): string {
+  const formatted = price.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
   });
+
+  if (dealType === "rent") {
+    return formatted + "/mo";
+  }
+  return formatted;
+
 }
