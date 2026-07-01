@@ -16,7 +16,9 @@ import { business } from "@/data/site";
 const footerLinks = [
   { label: "Buy", href: "/#listings" },
   { label: "Sell", href: "/#home-value" },
-  { label: "Areas", href: "/#areas" },
+  { label: "Rentals", href: "/rentals" },
+  { label: "Commercial", href: "/commercial" },
+  { label: "Areas we serve", href: "/#areas" },
   { label: "Our agents", href: "/#agents" },
   { label: "About", href: "/#about" },
   { label: "Contact", href: "/#contact" },

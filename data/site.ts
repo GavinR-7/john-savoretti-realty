@@ -14,7 +14,7 @@ export const business = {
 
   // TODO: confirm with John — his current site publishes JohnSavoretti@optonline.net,
   // the spec says OfficeAdmin@JohnSavorettiRealty.com. Using the spec's for now.
-  email: "OfficeAdmin@JohnSavorettiRealty.com",
+  email: "JohnSavoretti@optonline.net",
 
   phoneNassau: "(516) 327-6400",
   phoneNassauHref: "tel:+15163276400",
