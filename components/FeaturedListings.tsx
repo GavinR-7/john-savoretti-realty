@@ -41,7 +41,7 @@ export default function FeaturedListings() {
       listings.filter(
         (l) =>
           (town === "all" || l.town === town) &&
-          l.beds >= minBeds &&
+          (l.beds === null || l.beds >= minBeds) &&
           (maxPrice === 0 || l.price <= maxPrice)
       ),
     [town, minBeds, maxPrice]

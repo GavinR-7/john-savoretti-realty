@@ -63,7 +63,7 @@ export default function Hero() {
           >
             <PropertyImage
               src={spotlight.image}
-              alt={`${spotlight.style} for sale in ${spotlight.town} — ${formatPrice(spotlight.price)}`}
+              alt={`${spotlight.style} for sale in ${spotlight.town} — ${formatPrice(spotlight.price, spotlight.dealType)}`}
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
             />
@@ -73,7 +73,7 @@ export default function Hero() {
                   Just listed
                 </p>
                 <p className="font-display text-base font-semibold text-atlantic">
-                  {spotlight.town} {spotlight.style} · {formatPrice(spotlight.price)}
+                  {spotlight.town} {spotlight.style} · {formatPrice(spotlight.price, spotlight.dealType)}
                 </p>
               </div>
               <span aria-hidden="true" className="text-atlantic transition-transform group-hover:translate-x-1">
