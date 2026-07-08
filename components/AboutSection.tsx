@@ -11,7 +11,14 @@
 
 import { business } from "@/data/site";
 
+function formatStat(stat: (typeof business.stats)[number]) {
+  return stat.animate ? `${stat.prefix}${stat.target}${stat.suffix}` : stat.value;
+}
+
 export default function AboutSection() {
+  const soldStat = business.stats[0];
+  const homesStat = business.stats[1];
+
   return (
     <section id="about" className="bg-white">
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 md:grid-cols-[2fr_3fr] md:py-28">
@@ -69,8 +76,8 @@ export default function AboutSection() {
               only happens when you do it right the first time.
             </p>
             <p>
-              The results back it up: {business.stats[0].value} in homes sold
-              over the last twelve months, {business.stats[1].value}{" "}
+              The results back it up: {formatStat(soldStat)} in homes sold
+              over the last twelve months, {formatStat(homesStat)}{" "}
               families moved last year, and an A+ rating from the Better
               Business Bureau.
             </p>

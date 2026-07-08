@@ -7,6 +7,10 @@
   pulled June 2026. Verify anything marked TODO with John before launch.
 */
 
+type Stat =
+  | { animate: true; target: number; prefix: string; suffix: string; label: string }
+  | { animate: false; value: string; label: string };
+
 export const business = {
   name: "John Savoretti Realty",
   legalLine: "Licensed Real Estate Broker — New York",
@@ -50,14 +54,13 @@ export const business = {
   ],
 
   // Trust-strip stats (from the realtor.com profile + spec).
-  stats: [
-    { value: "$47M+", label: "Sold in the last 12 months" },
-    { value: "58", label: "Homes sold last year" },
-    { value: "30+", label: "Agents across two offices" },
-    { value: "BBB A+", label: "Accredited brokerage" },
-    { value: "5.0★", label: "Client rating" },
-  ],
-
+stats: [
+    { target: 47, prefix: "$", suffix: "M+", label: "Sold in the last 12 months", animate: true },
+    { target: 58, prefix: "",  suffix: "",   label: "Homes sold last year",       animate: true },
+    { target: 30, prefix: "",  suffix: "+",  label: "Agents across two offices",  animate: true },
+    { value: "BBB A+",                       label: "Accredited brokerage",       animate: false },
+    { value: "5.0★",                         label: "Client rating",              animate: false },
+  ] as Stat[],
   /*
     NY-REQUIRED COMPLIANCE DOCS — currently hosted on the old site vendor's
     domain (vlshomes.com). ⚠️ If John leaves that vendor these links die.

@@ -13,9 +13,11 @@ import Link from "next/link";
 import PropertyImage from "@/components/PropertyImage";
 import { business } from "@/data/site";
 import { listings, formatPrice } from "@/data/listings";
+import CountUpStat from "@/components/CountUpStat";
 
 export default function Hero() {
   const spotlight = listings.find((l) => l.id === "garden-city-tudor") ?? listings[0];
+  const soldStat = business.stats[0];
 
   return (
     <section aria-label="Welcome">
@@ -26,10 +28,11 @@ export default function Hero() {
             Nassau · Suffolk · Queens — family-run since 2001
           </p>
           <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-atlantic sm:text-5xl lg:text-[3.4rem]">
-            Get top dollar for your Long Island home — without the pressure.
+            Get top dollar for your home — without the pressure.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-mist">
-            30+ agents, two offices, and {business.stats[0].value.replace("+", "")} sold in the
+            30+ agents, two offices, and{" "}
+            {soldStat.animate ? `${soldStat.prefix}${soldStat.target}` : soldStat.value} sold in the
             last 12 months. We&rsquo;ll tell you what your home is really worth, and we&rsquo;ll
             never push you to list it.
           </p>
@@ -90,7 +93,11 @@ export default function Hero() {
           {business.stats.map((stat) => (
             <div key={stat.label} className="text-center md:text-left">
               <dd className="font-display text-3xl font-semibold text-brass-light">
-                {stat.value}
+                {stat.animate ? (
+                  <CountUpStat target={stat.target} prefix={stat.prefix} suffix={stat.suffix} />
+                ) : (
+                  stat.value
+                )}
               </dd>
               <dt className="mt-1 text-[11px] font-medium uppercase tracking-[0.15em] text-white/65">
                 {stat.label}

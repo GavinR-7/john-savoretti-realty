@@ -8,6 +8,11 @@
 import { business, featuredAgents, initials } from "@/data/site";
 
 export default function AgentsTeaser() {
+  const agentsStat = business.stats[2];
+  const agentsLabel = agentsStat.animate
+    ? `${agentsStat.prefix}${agentsStat.target}${agentsStat.suffix}`
+    : agentsStat.value;
+
   return (
     <section id="agents" className="bg-white">
       <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
@@ -17,7 +22,7 @@ export default function AgentsTeaser() {
               Our agents
             </p>
             <h2 className="mt-3 font-display text-3xl font-semibold text-harbor sm:text-4xl">
-              {business.stats[2].value} agents who know your block
+              {agentsLabel} agents who know your block
             </h2>
           </div>
           <a
