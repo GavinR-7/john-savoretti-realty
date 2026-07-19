@@ -10,13 +10,11 @@
 */
 
 import Link from "next/link";
-import PropertyImage from "@/components/PropertyImage";
 import { business } from "@/data/site";
-import { listings, formatPrice } from "@/data/listings";
 import CountUpStat from "@/components/CountUpStat";
+import HeroCarousel from "@/components/HeroCarousel";
 
 export default function Hero() {
-  const spotlight = listings.find((l) => l.id === "garden-city-tudor") ?? listings[0];
   const soldStat = business.stats[0];
 
   return (
@@ -58,32 +56,9 @@ export default function Hero() {
           </p>
         </div>
 
-        {/* Right: real-listing spotlight */}
+        {/* Right: real-listing spotlight carousel */}
         <div className="lg:col-span-6">
-          <Link
-            href={`/areas/${spotlight.areaSlug}`}
-            className="group relative block aspect-[4/3] overflow-hidden rounded-2xl shadow-xl shadow-atlantic/20"
-          >
-            <PropertyImage
-              src={spotlight.image}
-              alt={`${spotlight.style} for sale in ${spotlight.town} — ${formatPrice(spotlight.price, spotlight.dealType)}`}
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              priority
-            />
-            <div className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 rounded-lg bg-white/95 px-4 py-3 shadow-lg backdrop-blur transition-transform group-hover:-translate-y-0.5">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brass-deep">
-                  Just listed
-                </p>
-                <p className="font-display text-base font-semibold text-atlantic">
-                  {spotlight.town} {spotlight.style} · {formatPrice(spotlight.price, spotlight.dealType)}
-                </p>
-              </div>
-              <span aria-hidden="true" className="text-atlantic transition-transform group-hover:translate-x-1">
-                →
-              </span>
-            </div>
-          </Link>
+          <HeroCarousel />
         </div>
       </div>
 
