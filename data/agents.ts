@@ -55,3 +55,18 @@ export const agents: Agent[] = [
         featured : false,
     },
 ];
+
+// Converts a human-readable phone string (optionally with an "x123" / "Ext.123"
+// extension) into a tel: URI, e.g. "516-327-6400 x310" -> "tel:+15163276400,310".
+// Returns null for missing or malformed numbers so callers can skip the link.
+export function toTelHref(phone: string | null): string | null {
+  if (!phone) return null;
+
+  const [main, ext] = phone.split(/\s*(?:x|ext\.?)\s*/i);
+  const digits = main.replace(/\D/g, "");
+  if (digits.length !== 10) return null;
+
+  const extDigits = ext?.replace(/\D/g, "");
+  return `tel:+1${digits}${extDigits ? `,${extDigits}` : ""}`;
+}
+
