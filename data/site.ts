@@ -76,32 +76,6 @@ stats: [
   },
 };
 
-// Real agents from the current roster — featured on the homepage teaser.
-// The full ~30-agent roster becomes its own /agents page in v2.
-export const featuredAgents = [
-  {
-    name: "Dennis Arango",
-    title: "Associate Broker",
-    office: "Franklin Square",
-    phone: "(516) 327-6400",
-    phoneHref: "tel:+15163276400",
-  },
-  {
-    name: "Michael Cervone",
-    title: "Associate Broker",
-    office: "Franklin Square",
-    phone: "(516) 327-6400",
-    phoneHref: "tel:+15163276400",
-  },
-  {
-    name: "Rosemarie Causarano",
-    title: "Lic. RE Salesperson",
-    office: "Smithtown",
-    phone: "(631) 656-8600",
-    phoneHref: "tel:+16316568600",
-  },
-];
-
 export function initials(name: string): string {
   return name
     .split(" ")

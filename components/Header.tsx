@@ -18,7 +18,7 @@ const navLinks = [
   { label: "Rentals", href: "/rentals" },
   { label: "Commercial", href: "/commercial" },
   { label: "Areas we serve", href: "/#areas" },
-  { label: "Our agents", href: "/#agents" },
+  { label: "Our agents", href: "/agents" },
   { label: "About", href: "/#about" },
   { label: "Contact", href: "/#contact" },
 ];

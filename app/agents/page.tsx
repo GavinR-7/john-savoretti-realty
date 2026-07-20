@@ -1,18 +1,15 @@
-/*
-  AGENTS TEASER — server component, pure display.
-  Three real agents from the current roster (data/site.ts). A full /agents
-  page with all ~30 agents is a great v2 exercise: same pattern as
-  app/areas/[slug], driven by a data array.
-*/
-
-import { business, initials } from "@/data/site";
+import type { Metadata } from "next";
 import { agents } from "@/data/agents";
+import { initials } from "@/data/site";
 
-export default function AgentsTeaser() {
-  const agentsStat = business.stats[2];
-  const agentsLabel = agentsStat.animate
-    ? `${agentsStat.prefix}${agentsStat.target}${agentsStat.suffix}`
-    : agentsStat.value;
+
+export const metadata: Metadata = {
+  title: "Agents",
+  description:
+    "Agents with John Savoretti Realty.",
+};
+
+export default function AgentsPage() {
 
   return (
     <section id="agents" className="bg-white">
@@ -23,19 +20,19 @@ export default function AgentsTeaser() {
               Our agents
             </p>
             <h2 className="mt-3 font-display text-3xl font-semibold text-harbor sm:text-4xl">
-              {agentsLabel} agents who know your block
+              Meet our agents
             </h2>
           </div>
           <a
-            href="/agents"
+            href="/#contact"
             className="text-sm font-semibold text-atlantic underline-offset-4 hover:underline"
           >
-            See all agents →
+            Work with one of our agents →
           </a>
         </div>
 
         <div className="mt-10 grid gap-6 sm:grid-cols-3">
-          {agents.filter((a) => a.featured).map((agent) => (
+          {agents.map((agent) => (
             <div
               key={agent.name}
               className="rounded-2xl border border-atlantic/10 bg-fog p-6 transition hover:border-atlantic/30"
