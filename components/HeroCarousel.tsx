@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { listings, formatPrice } from "@/data/listings";
+import { saleListings, formatPrice } from "@/data/listings";
 import PropertyImage from "@/components/PropertyImage";
 import Link from "next/link";
 
@@ -10,7 +10,7 @@ const AUTO_ADVANCE_MS = 5000;
 export default function HeroCarousel() {
   // Only show sale listings in the hero spotlight — rentals/commercial
   // have their own pages and this is the seller-facing front door.
-  const spotlights = listings.filter((l) => l.dealType === "sale");
+  const spotlights = saleListings;
 
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false); // flips true on manual click
@@ -53,7 +53,7 @@ export default function HeroCarousel() {
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
           <PropertyImage
             src={current.image}
-            alt={`${current.style} for sale in ${current.town}`}
+            alt={`${current.style} for sale in ${current.city}`}
             priority
             sizes="(max-width: 768px) 100vw, 50vw"
           />
@@ -63,7 +63,7 @@ export default function HeroCarousel() {
             {current.status}
           </p>
           <p className="font-display text-lg font-semibold text-harbor">
-            {current.town} {current.style} · {formatPrice(current.price, current.dealType)}
+            {current.city} {current.style} · {formatPrice(current.price, current.dealType)}
           </p>
         </div>
       </Link>

@@ -15,7 +15,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import ListingCard from "@/components/ListingCard";
-import { listings } from "@/data/listings";
+import { listings, saleListings } from "@/data/listings";
+
 
 const PRICE_CAPS = [
   { label: "Any price", value: 0 },
@@ -26,25 +27,25 @@ const PRICE_CAPS = [
 ];
 
 export default function FeaturedListings() {
-  const [town, setTown] = useState("all");
+  const [city, setcity] = useState("all");
   const [minBeds, setMinBeds] = useState(0);
   const [maxPrice, setMaxPrice] = useState(0);
 
-  // Build the town dropdown from whatever towns exist in the data.
-  const towns = useMemo(
-    () => Array.from(new Set(listings.map((l) => l.town))).sort(),
+  // Build the city dropdown from whatever citys exist in the data.
+  const citys = useMemo(
+    () => Array.from(new Set(saleListings.map((l) => l.city))).sort(),
     []
   );
 
   const filtered = useMemo(
     () =>
-      listings.filter(
+      saleListings.filter(
         (l) =>
-          (town === "all" || l.town === town) &&
-          (l.beds === null || l.beds >= minBeds) &&
+          (city === "all" || l.city === city) &&
+          (l.beds === undefined || l.beds >= minBeds) &&
           (maxPrice === 0 || l.price <= maxPrice)
       ),
-    [town, minBeds, maxPrice]
+    [city, minBeds, maxPrice]
   );
 
   const selectClasses =
@@ -74,11 +75,11 @@ export default function FeaturedListings() {
         >
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-mist">
-              Town
+              city
             </span>
-            <select className={selectClasses} value={town} onChange={(e) => setTown(e.target.value)}>
-              <option value="all">All towns</option>
-              {towns.map((t) => (
+            <select className={selectClasses} value={city} onChange={(e) => setcity(e.target.value)}>
+              <option value="all">All citys</option>
+              {citys.map((t) => (
                 <option key={t} value={t}>
                   {t}
                 </option>
@@ -121,7 +122,7 @@ export default function FeaturedListings() {
         </form>
 
         <p className="mt-4 text-sm text-mist" aria-live="polite">
-          Showing {filtered.length} of {listings.length} exclusives
+          Showing {filtered.length} of {saleListings.length} exclusives
         </p>
 
         {filtered.length > 0 ? (

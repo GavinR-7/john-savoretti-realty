@@ -1,5 +1,6 @@
 export type Agent = {
     name : string;
+    slug : string;
     title : string;
     office : string;
     officePhone : string;
@@ -11,6 +12,7 @@ export type Agent = {
 export const agents: Agent[] = [
     {
         name : "John Savoretti",
+        slug : "john-savoretti",
         title : "Broker/Owner",
         office : "Smithtown",
         officePhone : "516-327-6400 x310",
@@ -20,6 +22,7 @@ export const agents: Agent[] = [
     },
     {
         name : "Dennis Arango",
+        slug : "dennis-arango",
         title : "Associate Broker",
         office : "Franklin Square",
         officePhone : "516-327-6400",
@@ -29,6 +32,7 @@ export const agents: Agent[] = [
     },
     {
         name : "Joe Romeo",
+        slug : "joe-romeo",
         title : "Lic. Real Estate Associate Broker",
         office : "Franklin Square",
         officePhone : " 516-327-6400 Ext353",
@@ -38,6 +42,7 @@ export const agents: Agent[] = [
     },
     {
         name : "Louis Tullo",
+        slug: "louis-tullo",
         title : "Lic. Real Estate Salesperson",
         office : "Franklin Square",
         officePhone : "516-327-6400 x313",
@@ -47,6 +52,7 @@ export const agents: Agent[] = [
     },
     {
         name : "Yolanda Recio",
+        slug : "yolanda-recio",
         title : "Lic. Real Estate Salesperson",
         office : "Franklin Square",
         officePhone : "516-327-6400 x331",
