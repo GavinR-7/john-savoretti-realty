@@ -4,9 +4,10 @@ export type Agent = {
     title : string;
     office : string;
     officePhone : string;
-    cell : string | null;
+    cell? : string;
     image : string;
     featured : boolean;
+    description?: string;
 };
 
 export const agents: Agent[] = [
@@ -16,7 +17,6 @@ export const agents: Agent[] = [
         title : "Broker/Owner",
         office : "Smithtown",
         officePhone : "516-327-6400 x310",
-        cell : null,
         image : "",
         featured : true,
     },
@@ -26,7 +26,6 @@ export const agents: Agent[] = [
         title : "Associate Broker",
         office : "Franklin Square",
         officePhone : "516-327-6400",
-        cell : null,
         image : "",
         featured : true,
     },
