@@ -49,7 +49,7 @@ export default function HeroCarousel() {
 
   return (
     <div className="relative">
-      <Link href={`/areas/${current.areaSlug}`} className="block">
+      <Link href={`/listings/${current.mls}`} className="block">
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
           <PropertyImage
             src={current.image}
