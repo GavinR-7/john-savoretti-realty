@@ -11,10 +11,13 @@
 
 import Link from "next/link";
 import { business } from "@/data/site";
+import type { Listing } from "@/data/listings";
 import CountUpStat from "@/components/CountUpStat";
 import HeroCarousel from "@/components/HeroCarousel";
 
-export default function Hero() {
+// The carousel is a client component and can't query the DB itself, so the
+// listings are fetched in app/page.tsx and passed straight through.
+export default function Hero({ listings }: { listings: Listing[] }) {
   const soldStat = business.stats[0];
 
   return (
@@ -36,7 +39,7 @@ export default function Hero() {
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
-              href="/#listings"
+              href="/buy"
               className="rounded-md bg-atlantic px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-channel"
             >
               Search homes
@@ -58,7 +61,7 @@ export default function Hero() {
 
         {/* Right: real-listing spotlight carousel */}
         <div className="lg:col-span-6">
-          <HeroCarousel />
+          <HeroCarousel listings={listings} />
         </div>
       </div>
 

@@ -13,7 +13,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 
 import { agents, toTelHref } from "@/data/agents";
-import { listings } from "@/data/listings";
+import { getListingsByAgentMlsId } from "@/lib/db/listings";
 import { business, initials } from "@/data/site";
 import ListingCard from "@/components/ListingCard";
 
@@ -39,7 +39,12 @@ export default async function AgentPage({ params }: Props) {
   const agent = agents.find((a) => a.slug === slug);
   if (!agent) notFound();
 
-  const agentListings = listings.filter((l) => l.agentSlug === slug);
+  /*
+    Matched on the agent's MLS id from data/agents.ts. Those ids are still
+    blank pending John's live feed, so this returns nothing today and the
+    page renders its existing "no active listings" state.
+  */
+  const agentListings = await getListingsByAgentMlsId(agent.mlsId);
 
   const officeHref = toTelHref(agent.officePhone);
   const cellHref = agent.cell ? toTelHref(agent.cell) : null;
@@ -141,7 +146,7 @@ export default async function AgentPage({ params }: Props) {
                   {agent.name.split(" ")[0]}&rsquo;s listings
                 </h2>
                 <Link
-                  href="/#listings"
+                  href="/buy"
                   className="text-sm font-semibold text-atlantic hover:text-channel"
                 >
                   See all listings →

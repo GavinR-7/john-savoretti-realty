@@ -1,69 +1,35 @@
-// app/rentals/page.tsx
-// A STATIC route: the folder "rentals" → the URL "/rentals".
-// No [slug], no params, no generateStaticParams — simpler than the areas page.
-
+/*
+  COMMERCIAL — app/commercial/page.tsx
+  Same search experience as /buy, pre-scoped to commercial by the route.
+*/
 import type { Metadata } from "next";
-import { listings } from "@/data/listings";
-import { business } from "@/data/site";
-import ListingCard from "@/components/ListingCard";
 
-// Page-level SEO for this specific page.
+import ListingResults from "@/components/ListingResults";
+import { parseFilters, type SearchParams } from "@/lib/listing-search";
+import { getCitiesWithListings } from "@/lib/db/listings";
+
 export const metadata: Metadata = {
-  title: "Long Island Commercial",
+  title: "Long Island Commercial Property",
   description:
-    "Commercial Homes and apartments for rent across Nassau, Suffolk, and Queens with John Savoretti Realty.",
+    "Commercial property for sale and lease across Nassau, Suffolk, and Queens. Filter by town, price, and size with John Savoretti Realty.",
 };
 
-export default function CommercialPage() {
-  // The one line that makes this the "rentals" page: filter the master
-  // list down to only rentals. Same idea as the areas page filtering by
-  // areaSlug — here we filter by dealType.
-  const commercials = listings.filter((l) => l.dealType === "commercial");
+type Props = { searchParams: Promise<SearchParams> };
+
+export default async function CommercialPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const cities = await getCitiesWithListings();
+  const filters = parseFilters(params, cities, "commercial");
 
   return (
-    <>
-      {/* Hero band — copied from the areas page, text changed */}
-      <section className="bg-atlantic text-white">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-20">
-          <h1 className="font-display text-4xl font-semibold sm:text-5xl">
-            Commercial
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/80">
-            Commercial Apartments and homes for rent across Long Island and Queens. New
-            listings come and go quickly — call us before they&rsquo;re gone.
-          </p>
-        </div>
-      </section>
-
-      {/* The listings grid */}
-      <section className="bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-20">
-          {commercials.length > 0 ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {commercials.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
-            </div>
-          ) : (
-            // Empty state — copied from the areas page pattern
-            <div className="rounded-2xl border border-atlantic/10 bg-fog p-8 text-center sm:p-12">
-              <h2 className="font-display text-2xl font-semibold text-harbor">
-                No commercial properties available right now
-              </h2>
-              <p className="mx-auto mt-3 max-w-xl text-mist">
-                Our properties move fast. Call the office and we&rsquo;ll let you
-                know what&rsquo;s coming up.
-              </p>
-                <a
-                href={business.phoneNassauHref}
-                className="mt-6 inline-flex items-center justify-center rounded-lg bg-atlantic px-5 py-3 text-sm font-semibold text-white transition hover:bg-channel"
-              >
-                Call {business.phoneNassau}
-              </a>
-            </div>
-          )}
-        </div>
-      </section>
-    </>
+    <ListingResults
+      basePath="/commercial"
+      title="Commercial"
+      intro="Commercial property across Long Island and Queens — storefronts, offices, and mixed-use. Tell us what you need and we'll find it."
+      emptyTitle="No commercial listings match those filters"
+      params={params}
+      cities={cities}
+      filters={filters}
+    />
   );
 }

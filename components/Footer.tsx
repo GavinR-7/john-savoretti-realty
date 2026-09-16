@@ -14,7 +14,7 @@
 import { business } from "@/data/site";
 
 const footerLinks = [
-  { label: "Buy", href: "/#listings" },
+  { label: "Buy", href: "/buy" },
   { label: "Sell", href: "/#home-value" },
   { label: "Rentals", href: "/rentals" },
   { label: "Commercial", href: "/commercial" },

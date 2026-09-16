@@ -52,15 +52,23 @@ export default function ListingCard({ listing }: { listing: Listing }) {
           {listing.description}
         </p>
 
-        <Link
-          href={`/areas/${listing.areaSlug}`}
-          className="relative z-10 mt-auto pt-2 text-sm font-semibold text-channel transition-colors hover:text-atlantic"
-        >
-          {listing.city}, NY — see the area{" "}
-          <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-0.5">
-            →
-          </span>
-        </Link>
+        {/* No City on the row means no area page exists — show the town as
+            plain text rather than linking somewhere that 404s. */}
+        {listing.areaSlug ? (
+          <Link
+            href={`/areas/${listing.areaSlug}`}
+            className="relative z-10 mt-auto pt-2 text-sm font-semibold text-channel transition-colors hover:text-atlantic"
+          >
+            {listing.city}, NY — see the area{" "}
+            <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-0.5">
+              →
+            </span>
+          </Link>
+        ) : (
+          <p className="mt-auto pt-2 text-sm font-semibold text-mist">
+            {listing.city}, NY
+          </p>
+        )}
 
       </div>
     </article>

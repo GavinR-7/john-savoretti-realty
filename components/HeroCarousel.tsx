@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { saleListings, formatPrice } from "@/data/listings";
+import { formatPrice, type Listing } from "@/data/listings";
 import PropertyImage from "@/components/PropertyImage";
 import Link from "next/link";
 
 const AUTO_ADVANCE_MS = 5000;
 
-export default function HeroCarousel() {
+export default function HeroCarousel({ listings }: { listings: Listing[] }) {
   // Only show sale listings in the hero spotlight — rentals/commercial
-  // have their own pages and this is the seller-facing front door.
-  const spotlights = saleListings;
+  // have their own pages and this is the seller-facing front door. The
+  // caller (a server component) does that filtering via getSaleListings().
+  const spotlights = listings;
 
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false); // flips true on manual click
@@ -46,6 +47,11 @@ export default function HeroCarousel() {
   // ↑↑↑ YOU WRITE THESE ↑↑↑
 
   const current = spotlights[index];
+
+  // The data is now a live query rather than a hardcoded array, so an empty
+  // result is possible (nothing synced yet, everything filtered out). Without
+  // this, `current` is undefined and the whole homepage 500s.
+  if (!current) return null;
 
   return (
     <div className="relative">

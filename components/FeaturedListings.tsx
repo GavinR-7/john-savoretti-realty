@@ -1,151 +1,82 @@
-"use client";
-
 /*
-  The "property search" section: a filter bar + the listings grid.
+  The homepage storefront strip: John Savoretti Realty's OWN listings.
 
-  This is a client component because the filters are interactive state.
-  The pattern to notice: the UI is a pure function of (data + filter state).
-  We never touch the DOM by hand — change the state, React re-renders the
-  grid. `useMemo` recomputes the filtered list only when an input changes.
+  This used to be an interactive filter over 15 pre-fetched rows, which meant
+  filtering searched inside those 15 rather than the whole feed — a subset of
+  a subset. Search now lives on /buy, backed by real SQL, so this is a pure
+  showcase and no longer needs client state. No "use client": it renders on
+  the server and ships as plain HTML.
 
-  When a live MLS/IDX feed arrives, only the data source changes; this
-  filtering UI keeps working as-is.
+  The other brokerages' inventory belongs on /buy; the homepage is his shop
+  window. If his office has nothing in the feed yet, we fall back to recent
+  in-market listings rather than showing an empty section.
 */
-
-import { useMemo, useState } from "react";
 import Link from "next/link";
 import ListingCard from "@/components/ListingCard";
-import { listings, saleListings } from "@/data/listings";
+import { getOfficeListings, getAllListings } from "@/lib/db/listings";
+import { business } from "@/data/site";
 
+const SHOWCASE_LIMIT = 15;
 
-const PRICE_CAPS = [
-  { label: "Any price", value: 0 },
-  { label: "Up to $750K", value: 750_000 },
-  { label: "Up to $1M", value: 1_000_000 },
-  { label: "Up to $1.5M", value: 1_500_000 },
-  { label: "Up to $2M", value: 2_000_000 },
-];
-
-export default function FeaturedListings() {
-  const [city, setcity] = useState("all");
-  const [minBeds, setMinBeds] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(0);
-
-  // Build the city dropdown from whatever citys exist in the data.
-  const citys = useMemo(
-    () => Array.from(new Set(saleListings.map((l) => l.city))).sort(),
-    []
-  );
-
-  const filtered = useMemo(
-    () =>
-      saleListings.filter(
-        (l) =>
-          (city === "all" || l.city === city) &&
-          (l.beds === undefined || l.beds >= minBeds) &&
-          (maxPrice === 0 || l.price <= maxPrice)
-      ),
-    [city, minBeds, maxPrice]
-  );
-
-  const selectClasses =
-    "w-full rounded-md border border-ink/15 bg-white px-3 py-2.5 text-sm font-medium text-ink focus:border-channel";
+export default async function FeaturedListings() {
+  const officeListings = await getOfficeListings(SHOWCASE_LIMIT);
+  const usingFallback = officeListings.length === 0;
+  const listings = usingFallback
+    ? await getAllListings(SHOWCASE_LIMIT)
+    : officeListings;
 
   return (
     <section id="listings" className="bg-white">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brass-deep">
-            Exclusive listings
-          </p>
-          <h2 className="mt-3 font-display text-3xl font-semibold text-atlantic sm:text-4xl">
-            Featured homes across Long Island
-          </h2>
-          <p className="mt-3 text-mist">
-            Straight from our current exclusives — and our agents can show you anything
-            on the market, not just what&rsquo;s here.
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brass-deep">
+              {usingFallback ? "On the market" : "Our listings"}
+            </p>
+            <h2 className="mt-3 font-display text-3xl font-semibold text-atlantic sm:text-4xl">
+              {usingFallback
+                ? "Homes across Long Island"
+                : "Featured homes from our office"}
+            </h2>
+            <p className="mt-3 text-mist">
+              {usingFallback
+                ? "A look at what's moving across Nassau, Suffolk, and Queens — and our agents can show you anything on the market, not just what's here."
+                : "Exclusives listed by John Savoretti Realty — and our agents can show you anything on the market, not just what's here."}
+            </p>
+          </div>
+
+          <Link
+            href="/buy"
+            className="rounded-md bg-atlantic px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-channel"
+          >
+            See all listings <span aria-hidden="true">→</span>
+          </Link>
         </div>
 
-        {/* Filter bar — the "search" */}
-        <form
-          aria-label="Filter listings"
-          className="mt-8 grid gap-3 rounded-xl bg-fog p-4 sm:grid-cols-3 lg:max-w-3xl"
-          onSubmit={(e) => e.preventDefault()}
-        >
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-mist">
-              city
-            </span>
-            <select className={selectClasses} value={city} onChange={(e) => setcity(e.target.value)}>
-              <option value="all">All citys</option>
-              {citys.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-mist">
-              Bedrooms
-            </span>
-            <select
-              className={selectClasses}
-              value={minBeds}
-              onChange={(e) => setMinBeds(Number(e.target.value))}
-            >
-              <option value={0}>Any beds</option>
-              <option value={3}>3+</option>
-              <option value={4}>4+</option>
-              <option value={5}>5+</option>
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-mist">
-              Max price
-            </span>
-            <select
-              className={selectClasses}
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
-            >
-              {PRICE_CAPS.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </form>
-
-        <p className="mt-4 text-sm text-mist" aria-live="polite">
-          Showing {filtered.length} of {saleListings.length} exclusives
-        </p>
-
-        {filtered.length > 0 ? (
-          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((listing) => (
+        {listings.length > 0 ? (
+          // The "See all listings" link in the header above is the single
+          // route to /buy from this section.
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {listings.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}
           </div>
         ) : (
-          <div className="mt-6 rounded-xl border border-dashed border-ink/20 bg-fog p-10 text-center">
+          // Only reachable if the feed itself is empty (nothing synced yet).
+          <div className="mt-10 rounded-xl border border-dashed border-ink/20 bg-fog p-10 text-center">
             <p className="font-display text-xl font-semibold text-atlantic">
-              Nothing here matches those filters — yet.
+              Our listings are on their way.
             </p>
             <p className="mt-2 text-mist">
-              Our agents see every home on the MLS the moment it lists. Tell us what
-              you&rsquo;re looking for and we&rsquo;ll find it.
+              Call the office and we&rsquo;ll tell you what&rsquo;s coming up
+              before it hits the portals.
             </p>
-            <Link
-              href="/#contact"
+            <a
+              href={business.phoneNassauHref}
               className="mt-5 inline-block rounded-md bg-atlantic px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-channel"
             >
-              Tell us what you want
-            </Link>
+              Call {business.phoneNassau}
+            </a>
           </div>
         )}
       </div>

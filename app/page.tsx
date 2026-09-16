@@ -9,6 +9,7 @@
 
 import Hero from "@/components/Hero";
 import FeaturedListings from "@/components/FeaturedListings";
+import { getSaleListings } from "@/lib/db/listings";
 import AreasGrid from "@/components/AreasGrid";
 import HomeValueForm from "@/components/HomeValueForm";
 import AboutSection from "@/components/AboutSection";
@@ -16,10 +17,15 @@ import Testimonials from "@/components/Testimonials";
 import AgentsTeaser from "@/components/AgentsTeaser";
 import ContactSection from "@/components/ContactSection";
 
-export default function HomePage() {
+export default async function HomePage() {
+  // The hero carousel is a client component, so its data is fetched here
+  // (server) and passed down. FeaturedListings is a server component now and
+  // queries its own office-scoped listings.
+  const saleListings = await getSaleListings();
+
   return (
     <>
-      <Hero />
+      <Hero listings={saleListings} />
       <FeaturedListings />
       <AreasGrid />
       <HomeValueForm />

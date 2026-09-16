@@ -11,21 +11,24 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-import { listings, formatPrice } from "@/data/listings";
-import { agents, toTelHref } from "@/data/agents";
+import { formatPrice } from "@/data/listings";
+import { findAgentByMlsId, toTelHref } from "@/data/agents";
 import { business } from "@/data/site";
 import ListingCard from "@/components/ListingCard";
 import ListingGallery from "@/components/ListingGallery";
+import { getListingByMls, getAllListingMlsNumbers, getListingsByCity } from "@/lib/db/listings";
+
 
 type Props = { params: Promise<{ mls: string }> };
 
-export function generateStaticParams() {
-  return listings.map((listing) => ({ mls: listing.mls }));
+export async function generateStaticParams() {
+  const mlsNumbers = await getAllListingMlsNumbers();
+  return mlsNumbers.map((mls) => ({ mls }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { mls } = await params;
-  const listing = listings.find((l) => l.mls === mls);
+  const listing = await getListingByMls(mls);
   if (!listing) return {};
 
   const headline = listing.address
@@ -42,16 +45,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ListingPage({ params }: Props) {
   const { mls } = await params;
 
-  const listing = listings.find((l) => l.mls === mls);
+  const listing = await getListingByMls(mls);
   // GUARD: .find() returns undefined when nothing matches (bad URL).
   // notFound() renders the 404 page AND tells TypeScript everything below
   // this line has a real listing — no more "possibly undefined" errors.
   if (!listing) notFound();
 
-  // Relational lookup: the listing stores only a reference (agentSlug),
-  // so we resolve the full agent record here. May be undefined — a listing
-  // might have no agent assigned — so we render it conditionally below.
-  const agent = agents.find((a) => a.slug === listing.agentSlug);
+  /*
+    ⚠️ IDX ATTRIBUTION: the listing agent and office come straight off the
+    feed and are ALWAYS displayed — most listings belong to other brokerages
+    and crediting them is a condition of using the feed.
+
+    Separately, if this listing happens to be one of OUR agents' (matched on
+    the MLS ID), we additionally link the name through to their bio page.
+    Returns undefined for every other brokerage, which is the common case.
+  */
+  const agent = findAgentByMlsId(listing.listAgentMlsId);
 
   /*
     THE PATTERN WORTH LEARNING — a details ARRAY instead of ten
@@ -79,9 +88,9 @@ export default async function ListingPage({ params }: Props) {
     { label: "Annual taxes", value: listing.taxes ? `$${listing.taxes.toLocaleString()}` : undefined },
   ].filter((row) => row.value !== undefined);
 
-  const moreInArea = listings
-  .filter((l) => l.areaSlug === listing.areaSlug && l.mls !== listing.mls)
-  .slice(0, 3);
+  const moreInArea = (await getListingsByCity(listing.city, 4))
+    .filter((l) => l.mls !== listing.mls)
+    .slice(0, 3);
 
   const twoColumnDetails = details.length >= 5;
 
@@ -90,13 +99,18 @@ export default async function ListingPage({ params }: Props) {
       {/* Breadcrumb bar — orientation + a way back out */}
       <div className="border-b border-atlantic/10 bg-fog">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-4 text-sm sm:px-6">
-          <Link href="/#listings" className="font-medium text-atlantic hover:text-channel">
+          <Link href="/buy" className="font-medium text-atlantic hover:text-channel">
             All listings
           </Link>
           <span className="text-mist">/</span>
-          <Link href={`/areas/${listing.areaSlug}`} className="font-medium text-atlantic hover:text-channel">
-            {listing.city}
-          </Link>
+          {/* No City on the row means no area page — plain text, not a 404 link. */}
+          {listing.areaSlug ? (
+            <Link href={`/areas/${listing.areaSlug}`} className="font-medium text-atlantic hover:text-channel">
+              {listing.city}
+            </Link>
+          ) : (
+            <span className="font-medium text-mist">{listing.city}</span>
+          )}
           <span className="text-mist">/</span>
           <span className="text-mist">MLS #{listing.mls}</span>
         </div>
@@ -182,37 +196,55 @@ export default async function ListingPage({ params }: Props) {
                 </dl>
               </div>
 
-              {/* Listing agent — only rendered if the lookup found one. */}
-              {agent && (
+              {/* ⚠️ IDX ATTRIBUTION — always shown when the feed provides it.
+                  The name links to a bio only when it's one of our agents. */}
+              {(listing.listAgentFullName || listing.listOfficeName) && (
                 <div className="mt-8 rounded-2xl border border-atlantic/10 bg-fog p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brass-deep">
                     Listed by
                   </p>
-                  <p className="mt-2 font-display text-lg font-semibold text-harbor">
-                    {agent.name}
-                  </p>
-                  <p className="text-sm text-mist">{agent.title}</p>
-                  <p className="mt-3 text-sm text-ink">
-                    Office:{" "}
-                    <a
-                      href={toTelHref(agent.officePhone) ?? undefined}
-                      className="font-medium text-atlantic hover:text-channel"
-                    >
-                      {agent.officePhone}
-                    </a>
-                  </p>
-                  {agent.cell && (
-                    <p className="text-sm text-ink">
-                      Direct:{" "}
-                      <a
-                        href={toTelHref(agent.cell) ?? undefined}
-                        className="font-medium text-atlantic hover:text-channel"
-                      >
-                        {agent.cell}
-                      </a>
+
+                  {listing.listAgentFullName && (
+                    <p className="mt-2 font-display text-lg font-semibold text-harbor">
+                      {agent ? (
+                        <Link href={`/agents/${agent.slug}`} className="text-atlantic hover:text-channel">
+                          {listing.listAgentFullName}
+                        </Link>
+                      ) : (
+                        listing.listAgentFullName
+                      )}
                     </p>
                   )}
-                  {/* TODO: "View bio" → /agents/[slug] once agent pages exist. */}
+
+                  {listing.listOfficeName && (
+                    <p className="text-sm text-mist">{listing.listOfficeName}</p>
+                  )}
+
+                  {/* Our own agents get their roster contact details too. */}
+                  {agent && (
+                    <>
+                      <p className="mt-3 text-sm text-ink">
+                        Office:{" "}
+                        <a
+                          href={toTelHref(agent.officePhone) ?? undefined}
+                          className="font-medium text-atlantic hover:text-channel"
+                        >
+                          {agent.officePhone}
+                        </a>
+                      </p>
+                      {agent.cell && (
+                        <p className="text-sm text-ink">
+                          Direct:{" "}
+                          <a
+                            href={toTelHref(agent.cell) ?? undefined}
+                            className="font-medium text-atlantic hover:text-channel"
+                          >
+                            {agent.cell}
+                          </a>
+                        </p>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
 
@@ -242,12 +274,14 @@ export default async function ListingPage({ params }: Props) {
               <h2 className="font-display text-2xl font-semibold text-harbor">
                 More homes in {listing.city}
               </h2>
-              <Link
-                href={`/areas/${listing.areaSlug}`}
-                className="text-sm font-semibold text-atlantic hover:text-channel"
-              >
-                See all homes in {listing.city} →
-              </Link>
+              {listing.areaSlug && (
+                <Link
+                  href={`/areas/${listing.areaSlug}`}
+                  className="text-sm font-semibold text-atlantic hover:text-channel"
+                >
+                  See all homes in {listing.city} →
+                </Link>
+              )}
             </div>
             <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {moreInArea.map((l) => (
