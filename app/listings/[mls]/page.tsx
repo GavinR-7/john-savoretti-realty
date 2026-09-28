@@ -16,6 +16,7 @@ import { findAgentByMlsId, toTelHref } from "@/data/agents";
 import { business } from "@/data/site";
 import ListingCard from "@/components/ListingCard";
 import ListingGallery from "@/components/ListingGallery";
+import IdxDisclaimer from "@/components/IdxDisclaimer";
 import { getListingByMls, getAllListingMlsNumbers, getListingsByCity } from "@/lib/db/listings";
 
 
@@ -117,7 +118,7 @@ export default async function ListingPage({ params }: Props) {
       </div>
 
       <section className="bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:py-14">
+        <div className="mx-auto max-w-6xl section-y px-4 sm:px-6">
           <div className="grid gap-10 lg:grid-cols-12">
 
             {/* ---------- LEFT: imagery ---------- */}
@@ -217,7 +218,9 @@ export default async function ListingPage({ params }: Props) {
                   )}
 
                   {listing.listOfficeName && (
-                    <p className="text-sm text-mist">{listing.listOfficeName}</p>
+                    <p className="text-sm text-mist">
+                      Listing courtesy of {listing.listOfficeName}
+                    </p>
                   )}
 
                   {/* Our own agents get their roster contact details too. */}
@@ -269,7 +272,7 @@ export default async function ListingPage({ params }: Props) {
 
       {moreInArea.length > 0 && (
         <section className="bg-fog">
-          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:py-20">
+          <div className="mx-auto max-w-6xl section-y px-4 sm:px-6">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <h2 className="font-display text-2xl font-semibold text-harbor">
                 More homes in {listing.city}
@@ -291,6 +294,9 @@ export default async function ListingPage({ params }: Props) {
           </div>
         </section>
       )}
+
+      {/* IDX attribution — required wherever feed data is displayed. */}
+      <IdxDisclaimer />
     </>
   );
 }

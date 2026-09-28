@@ -62,17 +62,18 @@ stats: [
     { value: "5.0★",                         label: "Client rating",              animate: false },
   ] as Stat[],
   /*
-    NY-REQUIRED COMPLIANCE DOCS — currently hosted on the old site vendor's
-    domain (vlshomes.com). ⚠️ If John leaves that vendor these links die.
-    Before launch: download the PDFs, put them in /public/docs/, and point
-    these paths at /docs/... instead. NY State requires brokers to post the
-    Fair Housing Notice and Standardized Operating Procedures on their site.
+    NY-REQUIRED COMPLIANCE DOCS — now self-hosted in /public/docs, so they no
+    longer break if John leaves the old vendor (vlshomes.com). NY State
+    requires brokers to post the Fair Housing Notice and Standardized
+    Operating Procedures. ⚠️ Have John confirm the SOP is the current version
+    with his name and license on it before launch.
   */
   compliance: {
-    fairHousing: "https://www.vlshomes.com/brokers/Fair_Housing_notice_NYS.PDF",
-    sop: "https://www.vlshomes.com/brokers/JOSV/sop.pdf",
-    accommodations:
-      "https://www.vlshomes.com/brokers/Reasonable-modification-and-accommodation-notice.PDF",
+    // Served from /public/docs — downloaded from the old vendor so these
+    // survive John leaving vlshomes.com. NY requires them to stay reachable.
+    fairHousing: "/docs/fair-housing-notice.pdf",
+    sop: "/docs/standardized-operating-procedures.pdf",
+    accommodations: "/docs/reasonable-accommodations.pdf",
   },
 };
 

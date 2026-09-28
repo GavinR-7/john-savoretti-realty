@@ -29,7 +29,7 @@ export default function Testimonials() {
 
   return (
     <section id="testimonials" className="bg-fog">
-      <div className="mx-auto max-w-4xl px-4 py-20 sm:px-6 md:py-28">
+      <div className="mx-auto max-w-4xl section-y px-4 sm:px-6">
         <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-brass-deep">
           What clients say
         </p>

@@ -17,7 +17,7 @@ export default function AgentsTeaser() {
 
   return (
     <section id="agents" className="bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
+      <div className="mx-auto max-w-6xl section-y px-4 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brass-deep">

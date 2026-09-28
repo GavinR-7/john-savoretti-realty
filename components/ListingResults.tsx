@@ -12,6 +12,7 @@ import { business } from "@/data/site";
 import ListingCard from "@/components/ListingCard";
 import ListingFilters from "@/components/ListingFilters";
 import Pagination from "@/components/Pagination";
+import IdxDisclaimer from "@/components/IdxDisclaimer";
 import { buildHref, toPositiveInt, type SearchParams } from "@/lib/listing-search";
 import {
   searchListings,
@@ -55,14 +56,14 @@ export default async function ListingResults({
   return (
     <>
       <section className="bg-atlantic text-white">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:py-16">
+        <div className="mx-auto max-w-6xl section-y px-4 sm:px-6">
           <h1 className="font-display text-4xl font-semibold sm:text-5xl">{title}</h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/80">{intro}</p>
         </div>
       </section>
 
       <section className="bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 md:py-16">
+        <div className="mx-auto max-w-6xl section-y px-4 sm:px-6">
           <ListingFilters
             action={basePath}
             cities={cities}
@@ -115,6 +116,9 @@ export default async function ListingResults({
           )}
         </div>
       </section>
+
+      {/* IDX attribution — required wherever feed data is displayed. */}
+      <IdxDisclaimer />
     </>
   );
 }

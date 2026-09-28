@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "sync": "tsx --env-file=.env.local scripts/sync.ts"
+    "sync": "tsx --conditions=react-server --env-file=.env.local scripts/sync.ts",
+    "cleanup-media": "tsx --conditions=react-server --env-file=.env.local scripts/cleanup-media.ts",
+    "recompress-media": "tsx --conditions=react-server --env-file=.env.local scripts/recompress-media.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -17,6 +19,8 @@
     "next": "^15.3.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "resend": "^6.30.0",
+    "server-only": "^0.0.1",
     "sharp": "^0.35.4"
   },
   "devDependencies": {

@@ -1,8 +1,8 @@
 /*
   ONE-OFF: recompress already-stored photos in place.
 
-    npx tsx --env-file=.env.local scripts/recompress-media.ts            # dry run
-    npx tsx --env-file=.env.local scripts/recompress-media.ts --confirm  # execute
+    npm run recompress-media              # dry run
+    npm run recompress-media -- --confirm # execute
 
   Why this exists: photos imported before compression landed are stored as
   full-size originals. They cannot be re-fetched from MLS Grid — their CDN

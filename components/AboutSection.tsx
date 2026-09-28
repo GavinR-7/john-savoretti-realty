@@ -3,10 +3,11 @@
   no state, no event handlers, no browser APIs. Server components ship zero
   JavaScript to the visitor, which keeps the page fast.
 
-  The headshot is a clearly-labeled placeholder. When John sends a photo,
-  drop it in /public/john.jpg and swap the placeholder block for:
+  TO SWAP IN THE REAL HEADSHOT: drop the photo at /public/john.jpg and
+  replace the initials avatar below with:
     <Image src="/john.jpg" alt="John Savoretti" fill className="object-cover" />
-  (import Image from "next/image" at the top.)
+  (import Image from "next/image" at the top.) Until then the avatar reads as
+  a deliberate brand mark rather than an unfinished placeholder.
 */
 
 import { business } from "@/data/site";
@@ -21,20 +22,22 @@ export default function AboutSection() {
 
   return (
     <section id="about" className="bg-white">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 md:grid-cols-[2fr_3fr] md:py-28">
-        {/* Headshot placeholder card */}
+      <div className="mx-auto grid max-w-6xl section-y items-center gap-12 px-4 sm:px-6 md:grid-cols-[2fr_3fr]">
+        {/* Headshot — initials avatar until the real photo lands (see above) */}
         <div>
           <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gradient-to-br from-harbor via-atlantic to-channel">
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
-              <span className="font-display text-7xl font-semibold text-brass-light">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+              <span
+                aria-hidden="true"
+                className="font-display text-8xl font-semibold leading-none text-brass-light"
+              >
                 JS
               </span>
-              <p className="text-xs uppercase tracking-[0.2em] text-white/60">
-                Headshot placeholder
+              <p className="font-display text-lg font-semibold text-white">
+                John Savoretti
               </p>
-              <p className="max-w-[16rem] text-sm text-white/70">
-                Drop John&rsquo;s photo here before the pitch — see the README
-                swap-in checklist.
+              <p className="text-xs uppercase tracking-[0.2em] text-white/60">
+                Broker / Owner
               </p>
             </div>
           </div>

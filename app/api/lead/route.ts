@@ -2,24 +2,49 @@
   LEAD API ROUTE — app/api/lead/route.ts maps to POST /api/lead.
   Both forms (home-value + contact) submit here.
 
-  Right now it validates, drops spam, and logs the lead to the server
-  console — enough for local dev and the demo. Before launch, wire it to
-  email John via Resend (3 steps, ~10 minutes):
+  The route exists so the Resend API key stays server-side: anything in
+  browser code is public, and env vars are only safe here.
 
-  1. npm install resend
-  2. Get an API key at resend.com → put it in .env.local as RESEND_API_KEY
-     (never commit .env.local — it's already in .gitignore)
-  3. Uncomment the Resend block below and set John's real inbox.
-
-  Why an API route at all (instead of posting from the browser to Resend)?
-  Because the API key must stay SECRET. Anything in browser code is public.
-  The route runs on the server, where env vars are safe.
+  ⚠️ A failed send returns 500 on purpose. Previously this logged to the
+  console and always returned ok, so in production every lead vanished while
+  the visitor saw a success message — the worst possible failure for a lead
+  form. Now the form shows its error state and the visitor knows to call.
 */
 
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
 
-// import { Resend } from "resend";
-// const resend = new Resend(process.env.RESEND_API_KEY);
+/*
+  Sender defaults to Resend's shared onboarding address, which works without
+  a verified domain but can ONLY deliver to the Resend account owner's own
+  address. Once johnsavorettirealty.com is verified in Resend, set
+  LEAD_FROM_EMAIL to something like "Website Leads <leads@johnsavorettirealty.com>"
+  and mail will reach John's office inbox instead.
+*/
+const FROM = process.env.LEAD_FROM_EMAIL || "onboarding@resend.dev";
+const TO = process.env.LEAD_TO_EMAIL;
+
+// Never echo the honeypot back into the email.
+const HIDDEN_FIELDS = new Set(["company"]);
+
+function subjectFor(data: Record<string, string>): string {
+  if (data.formType === "home-value") {
+    const where = [data.address, data.town].filter(Boolean).join(", ");
+    return `🏠 Home value request${where ? ` — ${where}` : ""}`;
+  }
+  return `📨 Website inquiry — ${data.intent || "General"}`;
+}
+
+function bodyFor(data: Record<string, string>): string {
+  const lines = Object.entries(data)
+    .filter(([key, value]) => !HIDDEN_FIELDS.has(key) && String(value ?? "").trim() !== "")
+    .map(([key, value]) => `${key}: ${value}`);
+  return [
+    ...lines,
+    "",
+    `Received: ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })} (ET)`,
+  ].join("\n");
+}
 
 export async function POST(request: Request) {
   let data: Record<string, string>;
@@ -30,7 +55,7 @@ export async function POST(request: Request) {
   }
 
   // Honeypot: real visitors never see the "company" field. If it's filled,
-  // a bot did it — pretend success so the bot moves on, but save nothing.
+  // a bot did it — pretend success so the bot moves on, but send nothing.
   if (data.company) {
     return NextResponse.json({ ok: true });
   }
@@ -46,24 +71,47 @@ export async function POST(request: Request) {
     );
   }
 
-  // For now: log it. Run `npm run dev` and watch the terminal when you
-  // submit a form — this is your "inbox" during development.
-  console.log("📥 New lead:", JSON.stringify(data, null, 2));
+  // Misconfiguration is a server fault, not the visitor's — fail loudly in
+  // the logs and let the form show its error rather than swallowing a lead.
+  if (!process.env.RESEND_API_KEY || !TO) {
+    console.error(
+      "Lead dropped: missing " +
+        [!process.env.RESEND_API_KEY && "RESEND_API_KEY", !TO && "LEAD_TO_EMAIL"]
+          .filter(Boolean)
+          .join(" and "),
+      JSON.stringify(data),
+    );
+    return NextResponse.json(
+      { ok: false, message: "We couldn't send that just now — please call the office." },
+      { status: 500 },
+    );
+  }
 
-  /*
-  await resend.emails.send({
-    from: "Website Leads <leads@johnsavorettirealty.com>", // must be a domain you verify in Resend
-    to: "OfficeAdmin@JohnSavorettiRealty.com",             // confirm with John
-    subject:
-      data.formType === "home-value"
-        ? `🏠 Home value request — ${data.address ?? ""}, ${data.town ?? ""}`
-        : `📨 Website inquiry — ${data.intent ?? "General"}`,
-    text: Object.entries(data)
-      .filter(([key]) => key !== "company")
-      .map(([key, value]) => `${key}: ${value}`)
-      .join("\n"),
-  });
-  */
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to: TO,
+      replyTo: email || undefined, // replying in the inbox goes straight to the lead
+      subject: subjectFor(data),
+      text: bodyFor(data),
+    });
+
+    // The SDK reports delivery failures in `error` rather than throwing.
+    if (error) {
+      console.error("Resend rejected lead:", error, JSON.stringify(data));
+      return NextResponse.json(
+        { ok: false, message: "We couldn't send that just now — please call the office." },
+        { status: 500 },
+      );
+    }
+  } catch (err) {
+    console.error("Lead send threw:", err, JSON.stringify(data));
+    return NextResponse.json(
+      { ok: false, message: "We couldn't send that just now — please call the office." },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }
