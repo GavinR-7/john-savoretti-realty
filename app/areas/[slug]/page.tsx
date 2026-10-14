@@ -16,6 +16,7 @@
 */
 
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 import { notFound } from "next/navigation";
 
 import { areas, type Area } from "@/data/areas";
@@ -50,12 +51,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const place = await resolvePlace(slug);
   if (!place) return {};
-  return {
+  return pageMetadata(`/areas/${slug}`, {
     title: `Homes for sale in ${place.name}, NY`,
     description: place.blurb
       ? `${place.blurb} Talk to a local John Savoretti Realty agent about buying or selling in ${place.name}.`
       : `Browse current listings in ${place.name}, NY with John Savoretti Realty.`,
-  };
+  });
 }
 
 export default async function AreaPage({ params }: Props) {

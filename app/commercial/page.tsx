@@ -3,16 +3,17 @@
   Same search experience as /buy, pre-scoped to commercial by the route.
 */
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 
 import ListingResults from "@/components/ListingResults";
 import { parseFilters, type SearchParams } from "@/lib/listing-search";
 import { getCitiesWithListings } from "@/lib/db/listings";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata("/commercial", {
   title: "Long Island Commercial Property",
   description:
     "Commercial property for sale and lease across Nassau, Suffolk, and Queens. Filter by town, price, and size with John Savoretti Realty.",
-};
+});
 
 type Props = { searchParams: Promise<SearchParams> };
 

@@ -11,17 +11,18 @@
   database does the filtering, so we only ever fetch one page of rows.
 */
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 
 import ListingResults from "@/components/ListingResults";
 import { LABEL_CLASSES, SELECT_CLASSES } from "@/components/ListingFilters";
 import { DEAL_TYPES, parseFilters, type SearchParams } from "@/lib/listing-search";
 import { getCitiesWithListings } from "@/lib/db/listings";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata("/buy", {
   title: "Search Long Island Homes for Sale",
   description:
     "Browse every home for sale, rent, and commercial listing across Nassau, Suffolk, and Queens. Filter by town, price, bedrooms, and bathrooms with John Savoretti Realty.",
-};
+});
 
 type Props = { searchParams: Promise<SearchParams> };
 

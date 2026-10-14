@@ -34,22 +34,41 @@ const publicSans = Public_Sans({
   display: "swap",
 });
 
+// One place for the site origin: metadata, JSON-LD, sitemap and robots all read
+// it. TODO: set NEXT_PUBLIC_SITE_URL to the real domain at launch.
+const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://johnsavorettirealty.com"
+).replace(/\/$/, "");
+
 export const metadata: Metadata = {
-  // TODO: swap for the real domain once purchased (e.g. johnsavorettirealty.com)
-  metadataBase: new URL("https://johnsavorettirealty.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default:
       "John Savoretti Realty — Long Island Homes | Nassau & Suffolk Real Estate",
     template: "%s | John Savoretti Realty",
   },
+  // No sales or headcount figures in the meta description: they came from a
+  // realtor.com profile and the client spec and have not been confirmed (see
+  // the launch checklist). The same facts that are true on any date stay.
   description:
-    "Family-run Long Island brokerage since 2001. 30+ agents, $47M+ sold in the last 12 months, offices in Franklin Square and Smithtown. Find out what your home is worth — no pressure.",
+    "Family-run Long Island brokerage since 2001, with offices in Franklin Square and Smithtown. Find out what your home is worth — no pressure.",
+  alternates: { canonical: "/" },
   openGraph: {
     title: "John Savoretti Realty — Long Island Homes",
     description:
       "Family-run Long Island brokerage since 2001. Find out what your home is worth — no pressure.",
+    url: "/",
+    siteName: business.name,
     type: "website",
     locale: "en_US",
+    images: [{ url: "/logo.png", alt: business.name }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "John Savoretti Realty — Long Island Homes",
+    description:
+      "Family-run Long Island brokerage since 2001. Find out what your home is worth — no pressure.",
+    images: ["/logo.png"],
   },
 };
 
@@ -57,11 +76,36 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "RealEstateAgent",
+  "@id": `${SITE_URL}/#business`,
   name: business.name,
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo.png`,
+  image: `${SITE_URL}/logo.png`,
   telephone: "+1-516-327-6400",
   email: business.email,
   foundingDate: "2001",
   sameAs: [business.instagram, business.facebook],
+  // One entry per office so the Suffolk number is machine-readable too.
+  contactPoint: business.offices.map((o) => ({
+    "@type": "ContactPoint",
+    contactType: "customer service",
+    name: o.name,
+    telephone: o.phoneHref.replace("tel:", ""),
+    areaServed: "US-NY",
+  })),
+  location: business.offices.map((o) => ({
+    "@type": "Place",
+    name: o.name,
+    telephone: o.phoneHref.replace("tel:", ""),
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: o.address,
+      addressLocality: o.cityStateZip.split(",")[0],
+      addressRegion: "NY",
+      postalCode: o.cityStateZip.split("NY")[1]?.trim() ?? "",
+      addressCountry: "US",
+    },
+  })),
   areaServed: areas.map((a) => a.name),
   address: business.offices.map((o) => ({
     "@type": "PostalAddress",
