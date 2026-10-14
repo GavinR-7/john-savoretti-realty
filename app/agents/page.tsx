@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 import Link from "next/link";
 import { agents, toTelHref } from "@/data/agents";
 import { initials } from "@/data/site";
 
 
-export const metadata: Metadata = {
-  title: "Agents",
+export const metadata: Metadata = pageMetadata("/agents", {
+  title: "Our Agents",
   description:
-    "Agents with John Savoretti Realty.",
-};
+    "Meet the John Savoretti Realty agents serving Nassau and Suffolk counties from the Franklin Square and Smithtown offices.",
+});
 
 export default function AgentsPage() {
 
