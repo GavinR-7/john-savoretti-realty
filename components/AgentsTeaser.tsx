@@ -6,7 +6,7 @@
 */
 import Link from "next/link";
 
-import { business, initials } from "@/data/site";
+import { business, initials, launchFlags } from "@/data/site";
 import { agents, toTelHref } from "@/data/agents";
 
 export default function AgentsTeaser() {
@@ -24,7 +24,9 @@ export default function AgentsTeaser() {
               Our agents
             </p>
             <h2 className="mt-3 font-display text-3xl font-semibold text-harbor sm:text-4xl">
-              {agentsLabel} agents who know your block
+              {launchFlags.showUnverifiedStats
+                ? `${agentsLabel} agents who know your block`
+                : "Agents who know your block"}
             </h2>
           </div>
           <a

@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "sync": "tsx --conditions=react-server --env-file=.env.local scripts/sync.ts",
     "cleanup-media": "tsx --conditions=react-server --env-file=.env.local scripts/cleanup-media.ts",
     "recompress-media": "tsx --conditions=react-server --env-file=.env.local scripts/recompress-media.ts"
