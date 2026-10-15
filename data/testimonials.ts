@@ -6,6 +6,8 @@
   them exactly, get his OK, and set `isSample: false` to hide the badge).
 */
 
+import { launchFlags } from "./site";
+
 export type Testimonial = {
   quote: string;
   name: string;
@@ -36,3 +38,8 @@ export const testimonials: Testimonial[] = [
     isSample: true,
   },
 ];
+
+// What the site actually renders: samples only while the demo flag is on.
+export const visibleTestimonials: Testimonial[] = testimonials.filter(
+  (t) => !t.isSample || launchFlags.showSampleTestimonials,
+);

@@ -14,11 +14,13 @@
 
   Every sample review renders a visible badge so John never mistakes filler
   for real reviews during the demo. Real ones: paste the exact quotes into
-  data/testimonials.ts and set isSample: false.
+  data/testimonials.ts and set isSample: false. Samples render only while
+  launchFlags.showSampleTestimonials is on; app/page.tsx skips this section
+  when nothing is left to show.
 */
 
 import { useState } from "react";
-import { testimonials } from "@/data/testimonials";
+import { visibleTestimonials as testimonials } from "@/data/testimonials";
 
 export default function Testimonials() {
   const [index, setIndex] = useState(0);

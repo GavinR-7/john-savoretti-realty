@@ -74,7 +74,57 @@ The pattern to internalize: **content lives in `/data`, presentation lives in `/
    - `A` record, host `@`, value `76.76.21.21`
    - `CNAME` record, host `www`, value `cname.vercel-dns.com`
    - DNS can take minutes to a few hours to propagate.
-4. Add `RESEND_API_KEY` under Project → Settings → Environment Variables (the production version of `.env.local`).
+4. Set the production env vars, schema and first import: see **Production** below.
+
+---
+
+## Production: database, env vars and the first import
+
+The homepage, search, listing pages and sitemap read Postgres (Neon). **A build without `DATABASE_URL` fails**, so the database comes first.
+
+### 1. Create the services (Gavin, in the dashboards)
+- **Neon Postgres**: create a project (Vercel → Storage → Neon works and sets `DATABASE_URL` itself). Use the *pooled* connection string.
+- **Vercel Blob** store, connected to this project. It sets `BLOB_READ_WRITE_TOKEN`.
+- **Resend** account. Verify `johnsavorettirealty.com` once the domain is ours (until then the shared sender can only email the Resend account owner).
+
+### 2. Environment variables (Vercel → Project → Settings → Environment Variables, Production)
+
+| Variable | What it is | Required |
+|---|---|---|
+| `DATABASE_URL` | Neon pooled connection string | yes; the build fails without it |
+| `MLSGRID_TOKEN` | MLS Grid API bearer token | yes |
+| `MLSGRID_API_URL` | MLS Grid base URL from the data license | yes |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob (photos re-hosted by the sync) | yes |
+| `CRON_SECRET` | Long random string; Vercel Cron sends it as a bearer token, and the sync route refuses to run without it | yes |
+| `RESEND_API_KEY` | Resend API key for the lead form | yes; a failed send shows the form's error |
+| `LEAD_TO_EMAIL` | Where leads go (confirm with John) | yes |
+| `LEAD_FROM_EMAIL` | e.g. `Website Leads <leads@johnsavorettirealty.com>` once the domain is verified in Resend | after domain verification |
+| `NEXT_PUBLIC_SITE_URL` | `https://johnsavorettirealty.com` (canonical, sitemap, robots) | yes, at launch |
+
+Values never go in git or chat. Locally the same names go in `.env.local`.
+
+### 3. Create the schema
+The schema lives in `lib/db/schema.ts`; the SQL is in `drizzle/` (generated with `npm run db:generate`). With `DATABASE_URL` for the production database in `.env.local`:
+
+```bash
+npm run db:migrate     # applies drizzle/*.sql in order and records them
+```
+
+If the production database was already created with `drizzle-kit push` (tables exist but drizzle's migrations table doesn't), **don't run migrate** (it would fail on "table already exists"). Run `npx drizzle-kit push` instead and check it reports no changes. After a schema change: edit `schema.ts`, `npm run db:generate`, commit the new SQL, then `npm run db:migrate`.
+
+### 4. The one-time full import (local, not on Vercel)
+```bash
+npm run sync           # reads .env.local; full import on an empty sync_state
+```
+The first run pulls every listing and re-hosts thousands of photos in Blob. It takes hours, which is why it never runs inside a serverless function. It records a watermark in `sync_state`. If it stops partway, run it again: it resumes from the watermark.
+
+### 5. Keep it current
+`vercel.json` schedules `/api/cron/sync` every 15 minutes. That route is incremental only: it refuses to run until step 4 has left a watermark, and it stops between pages when its time budget runs out. **Check the Vercel plan:** at the time of writing, Hobby allows cron jobs at most once a day, so an every-15-minutes schedule needs Pro (or a slower schedule).
+
+### 6. Launch flags (`data/site.ts` → `launchFlags`)
+Both are `false` (hidden) by default:
+- `showUnverifiedStats`: the $47M / 58 homes / 30+ agents / BBB A+ / 5.0★ figures. Off, the trust strip is hidden and the sentences quoting them fall back to plain wording. Turn it on only after John sources each figure (correct `stats` to match).
+- `showSampleTestimonials`: the three badged sample reviews. Off, they are filtered out, and the section disappears when no real review is left. Real reviews (`isSample: false`) always show.
 
 ---
 

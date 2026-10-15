@@ -10,7 +10,7 @@
 */
 
 import Link from "next/link";
-import { business } from "@/data/site";
+import { business, launchFlags } from "@/data/site";
 import type { Listing } from "@/data/listings";
 import CountUpStat from "@/components/CountUpStat";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -19,6 +19,8 @@ import HeroCarousel from "@/components/HeroCarousel";
 // listings are fetched in app/page.tsx and passed straight through.
 export default function Hero({ listings }: { listings: Listing[] }) {
   const soldStat = business.stats[0];
+  // Unverified figures stay off the page until the client sources them.
+  const showStats = launchFlags.showUnverifiedStats;
 
   return (
     <section aria-label="Welcome">
@@ -50,11 +52,18 @@ export default function Hero({ listings }: { listings: Listing[] }) {
           </p>
 
           <p className="mt-3 max-w-xl text-lg text-mist">
-            30+ agents, two offices, and{" "}
-            {soldStat.animate
-              ? `${soldStat.prefix}${soldStat.target}${soldStat.suffix}`
-              : soldStat.value}{" "}
-            sold in the last 12 months. We&rsquo;ll tell you what your home is really worth, and we&rsquo;ll
+            {showStats ? (
+              <>
+                30+ agents, two offices, and{" "}
+                {soldStat.animate
+                  ? `${soldStat.prefix}${soldStat.target}${soldStat.suffix}`
+                  : soldStat.value}{" "}
+                sold in the last 12 months.
+              </>
+            ) : (
+              <>Two offices, one family, since 2001.</>
+            )}{" "}
+            We&rsquo;ll tell you what your home is really worth, and we&rsquo;ll
             never push you to list it.
           </p>
           <div className="mt-6 flex flex-wrap gap-4">
@@ -72,7 +81,7 @@ export default function Hero({ listings }: { listings: Listing[] }) {
             </Link>
           </div>
           <p className="mt-6 text-sm text-mist">
-            BBB A+ accredited · 5.0★ rated · Talk to a person today:{" "}
+            {showStats && <>BBB A+ accredited · 5.0★ rated · </>}Talk to a person today:{" "}
             <a href={business.phoneNassauHref} className="font-semibold text-atlantic underline decoration-brass underline-offset-4">
               {business.phoneNassau}
             </a>
@@ -85,7 +94,8 @@ export default function Hero({ listings }: { listings: Listing[] }) {
         </div>
       </div>
 
-      {/* Trust strip */}
+      {/* Trust strip (hidden until the figures are sourced) */}
+      {showStats && (
       <div className="bg-atlantic">
         <dl className="mx-auto grid max-w-7xl section-y-tight grid-cols-2 gap-x-6 gap-y-8 px-4 sm:px-6 md:grid-cols-5 lg:px-8">
           {business.stats.map((stat) => (
@@ -104,6 +114,7 @@ export default function Hero({ listings }: { listings: Listing[] }) {
           ))}
         </dl>
       </div>
+      )}
     </section>
   );
 }

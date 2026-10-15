@@ -10,7 +10,7 @@
   a deliberate brand mark rather than an unfinished placeholder.
 */
 
-import { business } from "@/data/site";
+import { business, launchFlags } from "@/data/site";
 
 function formatStat(stat: (typeof business.stats)[number]) {
   return stat.animate ? `${stat.prefix}${stat.target}${stat.suffix}` : stat.value;
@@ -19,6 +19,11 @@ function formatStat(stat: (typeof business.stats)[number]) {
 export default function AboutSection() {
   const soldStat = business.stats[0];
   const homesStat = business.stats[1];
+  // Unverified figures (sales, headcount, BBB) stay off until sourced.
+  const showStats = launchFlags.showUnverifiedStats;
+  const chips = showStats
+    ? ["Broker / Owner", "Est. 2001", "BBB A+ accredited"]
+    : ["Broker / Owner", "Est. 2001"];
 
   return (
     <section id="about" className="bg-white">
@@ -43,7 +48,7 @@ export default function AboutSection() {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {["Broker / Owner", "Est. 2001", "BBB A+ accredited"].map((chip) => (
+            {chips.map((chip) => (
               <span
                 key={chip}
                 className="rounded-full border border-atlantic/15 bg-fog px-3 py-1 text-xs font-medium text-atlantic"
@@ -66,8 +71,8 @@ export default function AboutSection() {
           <div className="mt-6 space-y-4 text-base leading-relaxed text-mist">
             <p>
               John Savoretti opened the doors on Hempstead Turnpike in 2001.
-              Twenty-five years later, the brokerage has grown to 30+ agents
-              across two offices — Franklin Square in Nassau and Smithtown in
+              Twenty-five years later, the brokerage has grown to{" "}
+              {showStats ? "30+ agents across two offices" : "two offices"} — Franklin Square in Nassau and Smithtown in
               Suffolk — but it&rsquo;s still the kind of place where the
               broker&rsquo;s name is on the door and he picks up the phone.
             </p>
@@ -78,12 +83,14 @@ export default function AboutSection() {
               of the business comes from past clients and their kids — that
               only happens when you do it right the first time.
             </p>
+            {showStats && (
             <p>
               The results back it up: {formatStat(soldStat)} in homes sold
               over the last twelve months, {formatStat(homesStat)}{" "}
               families moved last year, and an A+ rating from the Better
               Business Bureau.
             </p>
+            )}
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
