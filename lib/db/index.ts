@@ -1,3 +1,7 @@
+import "server-only";
+// Importing this from a client component is a BUILD ERROR, not a runtime
+// surprise: it would ship the Postgres connection string to the browser.
+
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";

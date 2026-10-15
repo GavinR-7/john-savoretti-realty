@@ -1,3 +1,7 @@
+import "server-only";
+// Importing this from a client component is a BUILD ERROR, not a runtime
+// surprise: it would ship database queries to the browser.
+
 /*
   DATA ACCESS LAYER — the only file that knows Postgres exists.
 
@@ -7,7 +11,7 @@
 */
 
 import { db } from "@/lib/db";
-import { properties, propertyMedia, type PropertyRow, type MediaRow } from "@/lib/db/schema";
+import { properties, propertyMedia, syncState, type PropertyRow, type MediaRow } from "@/lib/db/schema";
 import { eq, and, desc, asc, sql, gte, lte, count, inArray } from "drizzle-orm";
 import type { Listing } from "@/data/listings";
 
@@ -362,4 +366,16 @@ export async function getListingsByAgentMlsId(
     .orderBy(desc(properties.listPrice))
     .limit(limit);
   return rowsToListings(rows);
+}
+
+/*
+  When the feed was last pulled. Powers the "Last updated" line in the IDX
+  disclaimer — MLS rules expect visitors to be able to see the data's age.
+*/
+export async function getLastSyncedAt(): Promise<Date | null> {
+  const [row] = await db
+    .select({ lastRunAt: syncState.lastRunAt })
+    .from(syncState)
+    .where(eq(syncState.resource, "Property"));
+  return row?.lastRunAt ?? null;
 }

@@ -42,8 +42,11 @@ export const metadata: Metadata = {
       "John Savoretti Realty — Long Island Homes | Nassau & Suffolk Real Estate",
     template: "%s | John Savoretti Realty",
   },
+  // No sales or headcount figures in the meta description: they came from a
+  // realtor.com profile and the client spec and have not been confirmed (see
+  // the launch checklist). The same facts that are true on any date stay.
   description:
-    "Family-run Long Island brokerage since 2001. 30+ agents, $47M+ sold in the last 12 months, offices in Franklin Square and Smithtown. Find out what your home is worth — no pressure.",
+    "Family-run Long Island brokerage since 2001, with offices in Franklin Square and Smithtown. Find out what your home is worth — no pressure.",
   openGraph: {
     title: "John Savoretti Realty — Long Island Homes",
     description:

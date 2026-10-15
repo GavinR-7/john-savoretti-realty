@@ -69,7 +69,7 @@ export default async function AgentPage({ params }: Props) {
 
       {/* Header band */}
       <section className="bg-atlantic text-white">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+        <div className="mx-auto max-w-6xl section-y px-4 sm:px-6">
           <div className="flex flex-col items-start gap-8 sm:flex-row sm:items-center">
             {/* Initials avatar — swap for a real headshot once John sends photos:
                 <Image src={agent.image} alt={agent.name} fill className="object-cover" /> */}
@@ -102,7 +102,7 @@ export default async function AgentPage({ params }: Props) {
       {/* Bio + CTA. The bio only renders once John supplies one — until then
           the section still stands on its own with the contact prompt. */}
       <section className="bg-white">
-        <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
+        <div className="mx-auto max-w-3xl section-y px-4 sm:px-6">
           {agent.description ? (
             <>
               <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-brass-deep">
@@ -138,7 +138,7 @@ export default async function AgentPage({ params }: Props) {
       {/* Their listings — or a graceful empty state. Most agents will have
           none until the IDX feed lands, so this branch matters. */}
       <section className="bg-fog">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:py-20">
+        <div className="mx-auto max-w-6xl section-y px-4 sm:px-6">
           {agentListings.length > 0 ? (
             <>
               <div className="flex flex-wrap items-end justify-between gap-4">

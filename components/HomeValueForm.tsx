@@ -74,7 +74,7 @@ export default function HomeValueForm() {
       {/* quiet brass keyline up top — the section announces itself with type, not decoration */}
       <div aria-hidden="true" className="h-1 bg-brass" />
 
-      <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+      <div className="mx-auto max-w-5xl section-y px-4 sm:px-6 lg:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brass-light">
           Free home valuation — no listing required
         </p>

@@ -4,8 +4,8 @@
   Run MANUALLY. This is deliberately not wired into the sync: the sync's job
   is to keep the feed current, not to mass-delete.
 
-    npx tsx --env-file=.env.local scripts/cleanup-media.ts            # dry run
-    npx tsx --env-file=.env.local scripts/cleanup-media.ts --confirm  # execute
+    npm run cleanup-media              # dry run
+    npm run cleanup-media -- --confirm # execute
 
   Without --confirm it only prints what it WOULD delete and changes nothing.
 

@@ -55,24 +55,50 @@ export default function HeroCarousel({ listings }: { listings: Listing[] }) {
 
   return (
     <div className="relative">
-      <Link href={`/listings/${current.mls}`} className="block">
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
-          <PropertyImage
-            src={current.image}
-            alt={`${current.style} for sale in ${current.city}`}
-            priority
-            sizes="(max-width: 768px) 100vw, 50vw"
-          />
+      {/*
+        All slides live in one flex track that we translate by -index * 100%,
+        so moving between them animates instead of hard-cutting. `overflow
+        hidden` on the viewport clips the rest.
+
+        motion-reduce:transition-none drops the animation for anyone who has
+        asked their OS for reduced motion — the slide still changes, it just
+        arrives instantly.
+      */}
+      <div className="overflow-hidden rounded-2xl">
+        <div
+          className="flex transition-transform duration-500 ease-out motion-reduce:transition-none"
+          style={{ transform: `translateX(-${index * 100}%)` }}
+        >
+          {spotlights.map((listing, i) => (
+            <Link
+              key={listing.id}
+              href={`/listings/${listing.mls}`}
+              className="relative block w-full shrink-0"
+              // Only the visible slide is a tab stop / exposed to screen readers.
+              aria-hidden={i !== index}
+              tabIndex={i === index ? undefined : -1}
+            >
+              <div className="relative aspect-[4/3] overflow-hidden">
+                <PropertyImage
+                  src={listing.image}
+                  alt={`${listing.style} for sale in ${listing.city}`}
+                  priority={i === 0}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              </div>
+              <div className="absolute bottom-4 left-4 right-4 rounded-lg bg-fog/95 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-brass-deep">
+                  {listing.status}
+                </p>
+                <p className="font-display text-lg font-semibold text-harbor">
+                  {listing.city} {listing.style} ·{" "}
+                  {formatPrice(listing.price, listing.dealType)}
+                </p>
+              </div>
+            </Link>
+          ))}
         </div>
-        <div className="absolute bottom-4 left-4 right-4 rounded-lg bg-fog/95 px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-brass-deep">
-            {current.status}
-          </p>
-          <p className="font-display text-lg font-semibold text-harbor">
-            {current.city} {current.style} · {formatPrice(current.price, current.dealType)}
-          </p>
-        </div>
-      </Link>
+      </div>
 
       <button type="button" onClick={prev} aria-label="Previous listing"
         className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-atlantic shadow transition hover:bg-white">

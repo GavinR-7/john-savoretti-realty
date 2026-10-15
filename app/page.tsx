@@ -14,6 +14,7 @@ import AreasGrid from "@/components/AreasGrid";
 import HomeValueForm from "@/components/HomeValueForm";
 import AboutSection from "@/components/AboutSection";
 import Testimonials from "@/components/Testimonials";
+import { visibleTestimonials } from "@/data/testimonials";
 import AgentsTeaser from "@/components/AgentsTeaser";
 import ContactSection from "@/components/ContactSection";
 
@@ -30,7 +31,7 @@ export default async function HomePage() {
       <AreasGrid />
       <HomeValueForm />
       <AboutSection />
-      <Testimonials />
+      {visibleTestimonials.length > 0 && <Testimonials />}
       <AgentsTeaser />
       <ContactSection />
     </>

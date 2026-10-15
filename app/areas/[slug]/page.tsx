@@ -69,7 +69,7 @@ export default async function AreaPage({ params }: Props) {
     <>
       {/* Hero band */}
       <section className="bg-atlantic text-white">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-20">
+        <div className="mx-auto max-w-6xl section-y px-4 sm:px-6">
           <a
             href="/#areas"
             className="text-sm font-medium text-brass-light hover:text-white"
@@ -110,7 +110,7 @@ export default async function AreaPage({ params }: Props) {
 
       {/* Listings in this area */}
       <section className="bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-20">
+        <div className="mx-auto max-w-6xl section-y px-4 sm:px-6">
           {localListings.length > 0 ? (
             <>
               <h2 className="font-display text-2xl font-semibold text-harbor">
@@ -145,7 +145,7 @@ export default async function AreaPage({ params }: Props) {
 
       {/* Seller CTA band */}
       <section className="bg-fog">
-        <div className="mx-auto max-w-6xl px-4 py-14 text-center sm:px-6">
+        <div className="mx-auto max-w-6xl section-y px-4 text-center sm:px-6">
           <h2 className="font-display text-2xl font-semibold text-harbor sm:text-3xl">
             Own a home in {place.name}?
           </h2>
