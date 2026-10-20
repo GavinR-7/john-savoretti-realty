@@ -2,6 +2,22 @@
 
 A modern, mobile-first, lead-generating site for a family-run Long Island brokerage (est. 2001). Built with **Next.js 15 (App Router) + Tailwind CSS v4 + TypeScript**, deploys to **Vercel**.
 
+## Overview
+
+**Problem.** A brokerage with two Long Island offices (Franklin Square and Smithtown) sells sale, rental and commercial listings, and needs one site that reads as one business and stays current without someone editing code.
+
+**What it does.** Sale (`/buy`), rental (`/rentals`) and commercial (`/commercial`) listings have their own routes, plus listing detail pages and a page per town (`/areas/[slug]`). Listings come from an MLS Grid IDX feed that `npm run sync` loads into Postgres (Neon, via Drizzle).
+
+**Design decisions.**
+- **Content in `/data`, presentation in `/components`.** Phones, offices and stats live in `data/site.ts`; a change there updates every page.
+- **One `Listing` type and one price formatter** (`data/listings.ts`) that cards and detail pages share, with `dealType` of `sale`, `rent` or `commercial`.
+- **Resumable, throttled sync** (`scripts/sync.ts`): incremental on the feed's modification timestamp, sequential pages, at most 2 requests per second, upserting visible records and deleting ones the feed marks not viewable.
+- **Dedicated routes per deal type** rather than filters on one index, so each is a distinct, linkable page.
+
+**Results.** None yet: the site has not launched, so there are no traffic or conversion numbers to report.
+
+**Stack.** Next.js 15, React, TypeScript, Tailwind CSS v4, Drizzle ORM, Neon Postgres, Vercel Blob (listing media), Vercel.
+
 ---
 
 ## Run it locally (first time)
@@ -44,21 +60,9 @@ The pattern to internalize: **content lives in `/data`, presentation lives in `/
 
 ---
 
-## ⚠️ Swap-in checklist (before showing John / before launch)
+## Launch checklist
 
-**For the pitch demo:**
-- [ ] Listing photos are Unsplash **placeholders** (real MLS photos are licensed — don't copy them from the old site). Get originals from John, drop them in `/public/listings/`, and point each listing's `image` in `data/listings.ts` at `/listings/filename.jpg`.
-- [ ] Headshot: add John's photo per the comment in `components/AboutSection.tsx`.
-- [ ] Reviews: replace the 3 samples in `data/testimonials.ts` with **real, exact quotes** from his Google/Zillow reviews (with his OK) and set `isSample: false`.
-- [ ] Logo: if John has one, replace the "JS" roundel in `Header.tsx` and `Footer.tsx`.
-
-**Before real launch:**
-- [ ] **Email**: confirm with John — his old site shows `JohnSavoretti@optonline.net`, the spec says `OfficeAdmin@JohnSavorettiRealty.com`. Set the right one in `data/site.ts`.
-- [ ] **SMS number**: "Text us" currently points at the office landline, which likely can't receive texts. Swap `smsHref` in `data/site.ts` to a cell or Twilio number.
-- [ ] **Compliance PDFs**: the NY Fair Housing Notice / SOP / accommodations links currently point at the **old vendor's domain** (vlshomes.com). Download them, put copies in `/public/docs/`, and update `business.compliance` to `/docs/...` — if he leaves that vendor, the legally required links die otherwise.
-- [ ] **Verify the 8 MLS numbers/prices** are still current (listings move).
-- [ ] **Domain**: update `metadataBase` in `app/layout.tsx` and `BASE` in `app/sitemap.ts` + `app/robots.ts`.
-- [ ] **Wire form email** via Resend — instructions are inline in `app/api/lead/route.ts`. Put the key in `.env.local` (never commit it; see `.env.example`).
+Tracked privately, outside this public repo.
 
 ---
 
@@ -85,9 +89,3 @@ The pattern to internalize: **content lives in `/data`, presentation lives in `/
 3. **Add a town**: add one object to `data/areas.ts` → a whole new SEO page exists at `/areas/your-slug`. Understand *why* (read `app/areas/[slug]/page.tsx`).
 4. **Break it on purpose**: delete a `}` in `Hero.tsx`, read the error overlay top-to-bottom, fix it. Error-reading is the skill.
 
-## v2 roadmap (the upsell)
-
-- `/agents` page with the full ~30-agent roster (same data-driven pattern)
-- Real MLS/IDX feed instead of the static listings array
-- AI chatbot trained on John's FAQs/listings (the $1,000–1,800 tier)
-- Missed-call text-back + review-request automation (the $2,000+ tier)
