@@ -6,13 +6,13 @@ A modern, mobile-first, lead-generating site for a family-run Long Island broker
 
 **Problem.** A brokerage with two Long Island offices (Franklin Square and Smithtown) sells sale, rental and commercial listings, and needs one site that reads as one business and stays current without someone editing code.
 
-**What it does.** Sale (`/buy`), rental (`/rentals`) and commercial (`/commercial`) listings have their own routes, plus listing detail pages and a page per town (`/areas/[slug]`). Listings come from an MLS Grid IDX feed that `npm run sync` loads into Postgres (Neon, via Drizzle).
+**What it does.** All listings at `/buy` (filterable by sale, rent or commercial), with rental (`/rentals`) and commercial (`/commercial`) pages of their own, plus listing detail pages and a page per town (`/areas/[slug]`). Listings come from an MLS Grid IDX feed that `npm run sync` loads into Postgres (Neon, via Drizzle).
 
 **Design decisions.**
 - **Content in `/data`, presentation in `/components`.** Phones, offices and stats live in `data/site.ts`; a change there updates every page.
 - **One `Listing` type and one price formatter** (`data/listings.ts`) that cards and detail pages share, with `dealType` of `sale`, `rent` or `commercial`.
-- **Resumable, throttled sync** (`scripts/sync.ts`): incremental on the feed's modification timestamp, sequential pages, at most 2 requests per second, upserting visible records and deleting ones the feed marks not viewable.
-- **Dedicated routes per deal type** rather than filters on one index, so each is a distinct, linkable page.
+- **Incremental, throttled sync** (`scripts/sync.ts`): it asks the feed only for records modified after the last saved timestamp, reads pages one at a time at no more than 2 requests per second, upserts visible records and deletes ones the feed marks not viewable. Known limit: if a run fails part-way, it saves the newest timestamp it has seen, so the next run can skip the record that failed and others at or before that time. After a failed run, delete the `Property` row in `sync_state` and run a full import. The launch-prep branch reworks this.
+- **One shared search, three entry points.** `/buy` is the full index with a deal-type selector (sale, rent, commercial). `/rentals` and `/commercial` reuse the same search and filter bar with the type pinned, so each has its own linkable page.
 
 **Results.** None yet: the site has not launched, so there are no traffic or conversion numbers to report.
 
