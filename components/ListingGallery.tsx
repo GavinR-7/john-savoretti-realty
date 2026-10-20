@@ -78,7 +78,7 @@ export default function ListingGallery({ images, alt, status }: ListingGalleryPr
               type="button"
               onClick={() => setLightboxAt(i)}
               aria-label={`View photo ${i + 1} of ${photos.length} full screen`}
-              className="relative aspect-[4/3] w-full shrink-0 snap-center cursor-zoom-in"
+              className="relative aspect-[4/3] w-full shrink-0 snap-center cursor-pointer"
             >
               <PropertyImage
                 src={image}
@@ -169,9 +169,8 @@ export default function ListingGallery({ images, alt, status }: ListingGalleryPr
 }
 
 /*
-  Full-screen viewer. Escape closes, ← / → move, and clicking the photo (or
-  pressing Enter on it) toggles a 2x zoom — when zoomed the frame becomes
-  scrollable so you can pan around it.
+  Full-screen viewer. Escape closes, ← / → move. No zoom: Gavin asked for it
+  removed (2026-09-28); phones already pinch-zoom.
 */
 function Lightbox({
   photos, alt, startAt, onClose,
@@ -182,11 +181,9 @@ function Lightbox({
   onClose: () => void;
 }) {
   const [index, setIndex] = useState(startAt);
-  const [zoomed, setZoomed] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   const go = useCallback((delta: number) => {
-    setZoomed(false);
     setIndex((i) => Math.max(0, Math.min(i + delta, photos.length - 1)));
   }, [photos.length]);
 
@@ -233,14 +230,6 @@ function Lightbox({
         </span>
         <div className="flex items-center gap-2">
           <button
-            type="button"
-            onClick={() => setZoomed((z) => !z)}
-            aria-pressed={zoomed}
-            className="rounded-md border border-white/30 px-3 py-1.5 text-sm font-semibold transition hover:border-white"
-          >
-            {zoomed ? "Zoom out" : "Zoom in"}
-          </button>
-          <button
             ref={closeRef}
             type="button"
             onClick={onClose}
@@ -252,22 +241,8 @@ function Lightbox({
         </div>
       </div>
 
-      <div className={`relative flex-1 ${zoomed ? "overflow-auto" : "overflow-hidden"}`}>
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => setZoomed((z) => !z)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              setZoomed((z) => !z);
-            }
-          }}
-          aria-label={zoomed ? "Zoom out" : "Zoom in"}
-          className={`relative mx-auto ${
-            zoomed ? "h-[200%] w-[200%] cursor-zoom-out" : "h-full w-full cursor-zoom-in"
-          }`}
-        >
+      <div className="relative flex-1 overflow-hidden">
+        <div className="relative mx-auto h-full w-full">
           <PropertyImage
             src={photos[index]}
             alt={`${alt} — photo ${index + 1}`}
