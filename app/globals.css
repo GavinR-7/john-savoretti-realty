@@ -100,3 +100,27 @@ section[id] {
     transition: none;
   }
 }
+
+/* --- Section rhythm ---------------------------------------------------
+   ONE source of truth for vertical section padding. Every section used to
+   hardcode its own (py-20 md:py-28, py-16 md:py-20, lg:py-24 …), so two
+   stacked sections put 160–224px of dead space between their content.
+
+   `section-y` is the standard band. `section-y-tight` is for bands that sit
+   directly against another (a hero's trust strip, a closing CTA), where the
+   full rhythm reads as a gap rather than a break.
+
+   Change these two numbers to retune the whole site's rhythm.            */
+@utility section-y {
+  padding-block: 3.5rem;
+  @media (width >= 768px) {
+    padding-block: 5rem;
+  }
+}
+
+@utility section-y-tight {
+  padding-block: 2.5rem;
+  @media (width >= 768px) {
+    padding-block: 3.25rem;
+  }
+}

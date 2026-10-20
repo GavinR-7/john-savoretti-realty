@@ -11,6 +11,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { business } from "@/data/site";
+import BrandMark from "@/components/BrandMark";
 
 const navLinks = [
   { label: "Buy", href: "/buy" },
@@ -34,24 +35,68 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  /*
+    Lock the page behind the mobile menu. Without this the body keeps
+    scrolling under the open panel. We stash the scroll position and pin the
+    body with `position: fixed` — `overflow: hidden` alone doesn't hold on
+    iOS Safari — then restore the exact position on close.
+  */
+  useEffect(() => {
+    if (!open) return;
+    const { scrollY } = window;
+    const { body } = document;
+    const previous = {
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      overflowY: body.style.overflowY,
+    };
+
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    body.style.overflowY = "scroll"; // keep the scrollbar gutter so nothing shifts
+
+    return () => {
+      body.style.position = previous.position;
+      body.style.top = previous.top;
+      body.style.width = previous.width;
+      body.style.overflowY = previous.overflowY;
+      window.scrollTo(0, scrollY);
+    };
+  }, [open]);
+
+  // Close the menu on Escape, which the scroll lock makes more important.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
     <header
       className={`sticky top-0 z-50 bg-white transition-shadow ${
         scrolled ? "shadow-md shadow-ink/5" : ""
       }`}
     >
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Wordmark */}
         <Link href="/" className="flex items-center gap-3" aria-label="John Savoretti Realty — home">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-atlantic font-display text-sm font-semibold text-brass-light">
-            JS
-          </span>
+          {/*
+            The crest is sized to the two-line wordmark block beside it
+            (~44px on mobile, ~52px from sm up), so the two read as one lockup
+            and the header stays the height it already was on phones.
+          */}
+          <BrandMark size={52} priority className="h-11 w-auto sm:h-13" />
           <span className="leading-tight">
-            <span className="block font-display text-lg font-semibold text-atlantic">
-              John Savoretti
+            <span className="block font-display text-base font-semibold text-atlantic sm:text-lg">
+              John Savoretti Realty
             </span>
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.3em] text-brass-deep">
-              Realty · Est. 2001
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-brass-deep">
+              Home of the Dream Team!
             </span>
           </span>
         </Link>

@@ -61,7 +61,7 @@ export default function ContactSection() {
 
   return (
     <section id="contact" className="bg-fog">
-      <div className="mx-auto grid max-w-6xl gap-12 px-4 py-20 sm:px-6 md:grid-cols-[2fr_3fr] md:py-28">
+      <div className="mx-auto grid max-w-6xl section-y gap-12 px-4 sm:px-6 md:grid-cols-[2fr_3fr]">
         {/* Left: heading + direct contact info */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brass-deep">

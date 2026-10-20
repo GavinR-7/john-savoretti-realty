@@ -12,6 +12,7 @@
 */
 
 import { business } from "@/data/site";
+import BrandMark from "@/components/BrandMark";
 
 const footerLinks = [
   { label: "Buy", href: "/buy" },
@@ -19,7 +20,7 @@ const footerLinks = [
   { label: "Rentals", href: "/rentals" },
   { label: "Commercial", href: "/commercial" },
   { label: "Areas we serve", href: "/#areas" },
-  { label: "Our agents", href: "/#agents" },
+  { label: "Our agents", href: "/agents" },
   { label: "About", href: "/#about" },
   { label: "Contact", href: "/#contact" },
 ];
@@ -27,14 +28,12 @@ const footerLinks = [
 export default function Footer() {
   return (
     <footer className="bg-harbor text-white/80">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-6xl section-y px-4 sm:px-6">
         <div className="grid gap-12 md:grid-cols-[2fr_1fr_2fr]">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-brass-light/50 font-display text-sm font-semibold text-brass-light">
-                JS
-              </span>
+              <BrandMark size={40} plate className="h-14 w-14" />
               <div>
                 <p className="font-display text-lg font-semibold text-white">
                   {business.name}
@@ -163,7 +162,7 @@ export default function Footer() {
             {/* Your builder credit — your quiet referral engine. Swap in your
                 name + link, or delete if John prefers a clean footer. */}
             <p>
-              Site by <span className="text-white/60">[Your Name]</span>
+              Site by <span className="text-white/60">Gavin Reis</span>
             </p>
           </div>
         </div>

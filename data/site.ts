@@ -7,6 +7,26 @@
   pulled June 2026. Verify anything marked TODO with John before launch.
 */
 
+/*
+  LAUNCH FLAGS — content that must not go live until the client backs it up.
+  Both default to false (hidden). Flip one to true only once its TODO is met.
+
+  showUnverifiedStats: the $47M sold, 58 homes, 30+ agents, BBB A+ and 5.0★
+    figures. None has a source on record (see the launch checklist). Off, the
+    trust strip under the hero is gone and every sentence that quotes one of
+    these figures falls back to wording without it (Hero, About, Agents).
+    Turn on per figure is not supported on purpose: when John sends sources,
+    correct `stats` below to match them, then turn this on.
+  showSampleTestimonials: the three "Sample review" quotes in
+    data/testimonials.ts. Off, sample entries are filtered out; with no real
+    reviews left the whole section is skipped. Real reviews (isSample: false)
+    show regardless of this flag.
+*/
+export const launchFlags = {
+  showUnverifiedStats: false,
+  showSampleTestimonials: false,
+};
+
 type Stat =
   | { animate: true; target: number; prefix: string; suffix: string; label: string }
   | { animate: false; value: string; label: string };
@@ -53,8 +73,9 @@ export const business = {
     },
   ],
 
-  // Trust-strip stats (from the realtor.com profile + spec).
-stats: [
+  // Trust-strip stats (from the realtor.com profile + spec). UNVERIFIED:
+  // shown only when launchFlags.showUnverifiedStats is true.
+  stats: [
     { target: 47, prefix: "$", suffix: "M+", label: "Sold in the last 12 months", animate: true },
     { target: 58, prefix: "",  suffix: "",   label: "Homes sold last year",       animate: true },
     { target: 30, prefix: "",  suffix: "+",  label: "Agents across two offices",  animate: true },
@@ -62,17 +83,18 @@ stats: [
     { value: "5.0★",                         label: "Client rating",              animate: false },
   ] as Stat[],
   /*
-    NY-REQUIRED COMPLIANCE DOCS — currently hosted on the old site vendor's
-    domain (vlshomes.com). ⚠️ If John leaves that vendor these links die.
-    Before launch: download the PDFs, put them in /public/docs/, and point
-    these paths at /docs/... instead. NY State requires brokers to post the
-    Fair Housing Notice and Standardized Operating Procedures on their site.
+    NY-REQUIRED COMPLIANCE DOCS — now self-hosted in /public/docs, so they no
+    longer break if John leaves the old vendor (vlshomes.com). NY State
+    requires brokers to post the Fair Housing Notice and Standardized
+    Operating Procedures. ⚠️ Have John confirm the SOP is the current version
+    with his name and license on it before launch.
   */
   compliance: {
-    fairHousing: "https://www.vlshomes.com/brokers/Fair_Housing_notice_NYS.PDF",
-    sop: "https://www.vlshomes.com/brokers/JOSV/sop.pdf",
-    accommodations:
-      "https://www.vlshomes.com/brokers/Reasonable-modification-and-accommodation-notice.PDF",
+    // Served from /public/docs — downloaded from the old vendor so these
+    // survive John leaving vlshomes.com. NY requires them to stay reachable.
+    fairHousing: "/docs/fair-housing-notice.pdf",
+    sop: "/docs/standardized-operating-procedures.pdf",
+    accommodations: "/docs/reasonable-accommodations.pdf",
   },
 };
 
