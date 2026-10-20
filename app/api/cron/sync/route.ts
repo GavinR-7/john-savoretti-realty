@@ -22,8 +22,8 @@ export const dynamic = "force-dynamic";
 
 /*
   Stop work at 4 minutes, leaving ~60s of the 300s ceiling to save state and
-  respond. The engine only checks this between pages, so the margin has to
-  cover finishing the page in flight — including its photo downloads.
+  respond. The engine checks it before every record and every photo, so the
+  margin only has to cover one photo download plus the state write.
 */
 const WORK_BUDGET_MS = 4 * 60 * 1000;
 

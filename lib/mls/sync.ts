@@ -41,11 +41,13 @@ import "server-only";
     status "success"   status "failed"
        └────────┬────────┘
                 ▼
-      write high-water mark to sync_state (BOTH paths)
+      write sync_state (BOTH paths); the high-water mark
+      only advances after a complete pass
 
   The whole loop is wrapped so a failure on page 40 keeps pages 1–39: whatever
-  we processed before the error is still committed, and the high-water mark is
-  still written, so the next run resumes from there instead of starting over.
+  we processed before the error is still committed. The high-water mark stays
+  put (results are unordered, so a partial pass can't vouch for unread pages),
+  and the next run repeats the query, skipping every photo it already holds.
 
   ── WHY THE FILTER NO LONGER SAYS `MlgCanView eq true` ─────────────────────
   That condition hid deletions. MLS Grid signals a delete by flipping
@@ -262,6 +264,7 @@ async function syncMediaForProperty(
   listingKey: string,
   media: any[],
   progress: Progress,
+  shouldStop: () => boolean = () => false,
 ) {
   // Only photos the MLS says we may publish.
   const publishable = (media ?? []).filter(
@@ -307,6 +310,9 @@ async function syncMediaForProperty(
   }
 
   for (const { item, supersedes } of work) {
+    // Out of time: leave the rest. They have no stored row yet, so the next
+    // run (which re-reads this property from the old watermark) fetches them.
+    if (shouldStop()) return;
     // One bad photo must not take down the property or the run.
     try {
       await waitForDownloadBudget();
@@ -493,7 +499,7 @@ export type SyncOptions = {
     beyond any serverless budget. That first pass stays a local script.
   */
   incrementalOnly?: boolean;
-  /* Wall-clock budget, checked between pages (never mid-page). */
+  /* Wall-clock budget, checked before every record and every photo. */
   budgetMs?: number;
   log?: (message: string) => void;
 };
@@ -539,13 +545,23 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
       : "Full import — no previous sync state found",
   );
 
-  // Persist the outcome on BOTH the success and failure paths, so a crash
-  // mid-import still advances the watermark and the next run resumes.
-  async function saveState(status: "success" | "failed") {
+  /*
+    Persist the outcome on every path, but only move the watermark after a
+    COMPLETE pass (no nextLink left). The query has no $orderby, so records
+    arrive in no particular timestamp order: after a partial pass the highest
+    timestamp seen can be newer than records still on the unread pages, and
+    saving it would skip them for good. A partial run (budget stop or crash)
+    keeps the old watermark and the next run repeats the query. That is cheap:
+    upserts are idempotent and unchanged photos are skipped, so each retry
+    only does the work the last one didn't finish.
+    (Resuming mid-query would need the nextLink cursor stored in sync_state,
+    which is a schema change.)
+  */
+  async function saveState(status: "success" | "failed", complete: boolean) {
     const row = {
       resource: RESOURCE,
       // Never move the watermark backwards if a run received nothing.
-      lastModificationTimestamp: progress.highWater ?? since,
+      lastModificationTimestamp: complete ? (progress.highWater ?? since) : since,
       lastRunAt: new Date(),
       lastRunStatus: status,
       recordsProcessed: progress.received,
@@ -564,7 +580,7 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
     // Strictly sequential: one page in flight at a time, following their
     // nextLink until it stops coming back. Never parallelised — their Best
     // Practices forbid concurrent requests.
-    while (url) {
+    while (url && !stoppedForBudget) {
       const page: MlsGridPage = await fetchPage(url);
       const records = page.value ?? [];
       progress.pages += 1;
@@ -573,6 +589,16 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
       let pageDeletes = 0;
 
       for (const record of records) {
+        /*
+          Budget check per record, not per page: a page of new listings can
+          carry hundreds of photo downloads, far past a 300s function ceiling.
+          Stopping here is safe because the watermark doesn't move on a
+          partial pass (see saveState).
+        */
+        if (outOfBudget()) {
+          stoppedForBudget = true;
+          break;
+        }
         progress.received += 1;
 
         // Track the timestamp FIRST — before any decision to store, delete,
@@ -622,7 +648,7 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
         pageUpserts += 1;
 
         // Photos arrive on the same payload via $expand=Media.
-        await syncMediaForProperty(db, row.listingKey, record.Media, progress);
+        await syncMediaForProperty(db, row.listingKey, record.Media, progress, outOfBudget);
       }
 
       log(
@@ -636,20 +662,17 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
 
       // The cursor for the next page. Absent → we've reached the end.
       url = page["@odata.nextLink"];
-
-      /*
-        Between pages is the ONLY safe place to stop: this page is fully
-        committed and the watermark already covers every record in it, so the
-        next run resumes exactly here instead of redoing work.
-      */
-      if (url && outOfBudget()) {
-        stoppedForBudget = true;
-        log(`  time budget reached after ${progress.pages} page(s) — stopping cleanly`);
-        break;
-      }
+      if (url && outOfBudget()) stoppedForBudget = true;
     }
 
-    await saveState("success");
+    if (stoppedForBudget) {
+      log(
+        `  time budget reached after ${progress.pages} page(s) — stopping cleanly; ` +
+          `watermark stays at ${since?.toISOString() ?? "none"} and the next run repeats the query`,
+      );
+    }
+    const complete = !stoppedForBudget;
+    await saveState("success", complete);
     log(
       `Done. ${progress.pages} page(s), ${progress.received} received: ` +
         `${progress.upserted} upserted, ${progress.deleted} deleted, ${progress.skipped} skipped.`,
@@ -669,7 +692,7 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
       `Compression: ${formatBytes(progress.bytesOriginal)} downloaded → ` +
         `${formatBytes(progress.bytesCompressed)} stored (−${pct}%, saved ${formatBytes(saved)}).`,
     );
-    if (progress.highWater) {
+    if (complete && progress.highWater) {
       log(`Watermark now ${progress.highWater.toISOString()}`);
     }
 
@@ -680,20 +703,18 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
     };
   } catch (err) {
     /*
-      DO NOT START OVER. Everything processed before this point is already
-      committed, and saving the watermark here means the next run picks up
-      from the last record we actually received rather than re-importing
-      from scratch — which their docs specifically warn against.
+      Everything processed before this point is already committed. The
+      watermark stays where it was (a partial pass, see saveState), so the
+      next run repeats the query; rows already stored are re-upserted and
+      photos already held are skipped, so no download is repeated.
     */
-    await saveState("failed");
+    await saveState("failed", false);
     console.error(
       `Sync failed after ${progress.pages} page(s), ${progress.received} record(s).`,
     );
-    if (progress.highWater) {
-      console.error(
-        `Progress saved — next run resumes from ${progress.highWater.toISOString()}`,
-      );
-    }
+    console.error(
+      `Watermark unchanged (${since?.toISOString() ?? "none"}) — next run repeats the query.`,
+    );
     throw err;
   }
 }

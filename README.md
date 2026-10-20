@@ -116,10 +116,10 @@ If the production database was already created with `drizzle-kit push` (tables e
 ```bash
 npm run sync           # reads .env.local; full import on an empty sync_state
 ```
-The first run pulls every listing and re-hosts thousands of photos in Blob. It takes hours, which is why it never runs inside a serverless function. It records a watermark in `sync_state`. If it stops partway, run it again: it resumes from the watermark.
+The first run pulls every listing and re-hosts thousands of photos in Blob. It takes hours, which is why it never runs inside a serverless function. It records a watermark in `sync_state`. If it stops partway, run it again: the watermark only advances after a complete pass, so it repeats the query, but rows are re-upserted and photos already in Blob are skipped, so only the unfinished work takes time.
 
 ### 5. Keep it current
-`vercel.json` schedules `/api/cron/sync` every 15 minutes. That route is incremental only: it refuses to run until step 4 has left a watermark, and it stops between pages when its time budget runs out. **Check the Vercel plan:** at the time of writing, Hobby allows cron jobs at most once a day, so an every-15-minutes schedule needs Pro (or a slower schedule).
+`vercel.json` schedules `/api/cron/sync` every 15 minutes. That route is incremental only: it refuses to run until step 4 has left a watermark, and it stops before the next record or photo when its time budget runs out, leaving the watermark unchanged so the next run picks up the rest. **Check the Vercel plan:** at the time of writing, Hobby allows cron jobs at most once a day, so an every-15-minutes schedule needs Pro (or a slower schedule).
 
 ### 6. Launch flags (`data/site.ts` → `launchFlags`)
 Both are `false` (hidden) by default:
