@@ -14,7 +14,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { z } from "zod";
-import { checkFormSpam, countRejection } from "@/lib/formSpam";
+import { checkFormSpam, countRejection, logSubmission } from "@/lib/formSpam";
 
 /*
   Sender defaults to Resend's shared onboarding address, which works without
@@ -186,5 +186,6 @@ export async function POST(request: Request) {
     );
   }
 
+  logSubmission("john-savoretti-realty");
   return NextResponse.json({ ok: true });
 }

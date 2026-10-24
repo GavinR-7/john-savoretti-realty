@@ -9,6 +9,16 @@ export function countRejection(reason: SpamReason) {
   console.info(JSON.stringify({ event: "contact_spam_rejected", reason, count: 1 }));
 }
 
+/** One event after the mail provider accepts delivery, never form/request data. */
+export function logSubmission(site: "above-all-tents-v2" | "john-savoretti-realty" | "embedded-intent") {
+  console.info(JSON.stringify({
+    event: "contact_submitted",
+    timestamp: new Date().toISOString(),
+    site,
+    outcome: "accepted",
+  }));
+}
+
 const protectionSchema = z.object({
   companyUrl: z.string().max(5000).optional(),
   company: z.string().max(5000).optional(),

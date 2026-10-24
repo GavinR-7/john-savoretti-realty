@@ -27,6 +27,7 @@ beforeEach(() => {
   process.env.TURNSTILE_SECRET_KEY = "test-secret";
   process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "test-site";
   logs = mock.method(console, "info", () => {});
+  mock.method(console, "error", () => {});
   mock.method(globalThis, "fetch", async () => Response.json({ success: true, hostname: "example.com", action: "contact" }));
 });
 afterEach(() => { process.env = originalEnv; mock.restoreAll(); });
@@ -124,17 +125,58 @@ test("endpoint counts malformed JSON without logging its contents", async () => 
   assert.equal(response.status, 400);
   assert.deepEqual(JSON.parse(logs.mock.calls[0].arguments[0]), { event: "contact_spam_rejected", reason: "zod", count: 1 });
 });
-test("verified endpoint sends exactly one email without security fields", async () => {
+function configureMail() {
   process.env.RESEND_API_KEY = "test-mail-key";
   process.env.AUDIT_TO_EMAIL = process.env.QUOTE_TO_EMAIL = "inbox@example.com";
   process.env.AUDIT_FROM_EMAIL = process.env.QUOTE_FROM_EMAIL = "sender@example.com";
+}
+test("verified endpoint sends one email and logs one personal-data-free acceptance event", async () => {
+  configureMail();
   fetch.mock.mockImplementation(async (url) => url === "https://challenges.cloudflare.com/turnstile/v0/siteverify"
     ? Response.json({ success: true, hostname: "example.com", action: "contact" })
     : Response.json({ id: "test-email-id" }));
+  const before = Date.now();
   assert.equal((await post(lead())).status, 200);
+  const after = Date.now();
   assert.equal(fetch.mock.callCount(), 2);
   const delivery = fetch.mock.calls[1].arguments[1].body;
   assert.ok(!delivery.includes("test-response"));
   assert.ok(!delivery.includes("renderedAt"));
+  assert.equal(logs.mock.callCount(), 1);
+  assert.equal(logs.mock.calls[0].arguments.length, 1);
+  const event = JSON.parse(logs.mock.calls[0].arguments[0]);
+  assert.deepEqual(event, {
+    event: "contact_submitted",
+    timestamp: event.timestamp,
+    site: { audit: "embedded-intent", quote: "above-all-tents-v2", lead: "john-savoretti-realty" }[routeName],
+    outcome: "accepted",
+  });
+  assert.equal(new Date(event.timestamp).toISOString(), event.timestamp);
+  assert.ok(Date.parse(event.timestamp) >= before && Date.parse(event.timestamp) <= after);
+});
+test("missing email configuration does not log an accepted submission", async () => {
+  delete process.env.RESEND_API_KEY;
+  assert.ok((await post(lead())).status >= 500);
+  assert.equal(logs.mock.callCount(), 0);
+});
+test("mail provider rejection does not log an accepted submission", async () => {
+  configureMail();
+  fetch.mock.mockImplementation(async (url) => url === "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+    ? Response.json({ success: true, hostname: "example.com", action: "contact" })
+    : Response.json({ message: "Synthetic delivery failure" }, { status: 500 }));
+  assert.ok((await post(lead())).status >= 500);
+  assert.equal(fetch.mock.callCount(), 2);
+  assert.equal(logs.mock.callCount(), 0);
+});
+test("mail transport failure does not log an accepted submission", async () => {
+  configureMail();
+  fetch.mock.mockImplementation(async (url) => {
+    if (url === "https://challenges.cloudflare.com/turnstile/v0/siteverify") {
+      return Response.json({ success: true, hostname: "example.com", action: "contact" });
+    }
+    throw new Error("Synthetic network failure");
+  });
+  assert.ok((await post(lead())).status >= 500);
+  assert.equal(fetch.mock.callCount(), 2);
   assert.equal(logs.mock.callCount(), 0);
 });

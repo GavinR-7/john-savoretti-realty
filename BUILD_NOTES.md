@@ -1,5 +1,21 @@
 # Build notes
 
+## T-354: accepted contact submission counts (2026-10-24)
+
+After Resend accepts an email, the endpoint emits exactly one JSON line through
+the same console.info sink as rejection events:
+
+`{"event":"contact_submitted","timestamp":"<ISO-8601 UTC>","site":"john-savoretti-realty","outcome":"accepted"}`
+
+The site ID is a fixed code constant, never an incoming host or form value.
+No name, email, phone, message, token or request data is included. Count these
+events to measure accepted submissions alongside rejection counts. Provider
+acceptance does not prove inbox delivery, a unique person or a confirmed sale.
+Missing configuration, spam/validation rejection and failed email delivery
+produce no contact_submitted event. Tests check one exact event on success,
+its timestamp/site/outcome, and no success event for configuration/provider/
+transport failures. The focused security/route suite now has 23 cases.
+
 ## T-320: contact form spam protection (2026-10-23)
 
 `FormProtection` supplies a hidden honeypot, mount timestamp and invisible
