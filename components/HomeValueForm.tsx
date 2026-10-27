@@ -19,6 +19,8 @@
 */
 
 import { useState, type FormEvent } from "react";
+import { FormProtection, readProtection, resetProtection } from "@/components/FormProtection";
+import { spam } from "@/content/spam";
 import { areas } from "@/data/areas";
 import { business } from "@/data/site";
 
@@ -33,8 +35,10 @@ export default function HomeValueForm() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const submittedForm = e.currentTarget;
+    const protection = readProtection(submittedForm);
     setError("");
 
     if (!address.trim() || !town) {
@@ -52,6 +56,7 @@ export default function HomeValueForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          ...protection,
           formType: "home-value",
           address,
           town,
@@ -61,11 +66,16 @@ export default function HomeValueForm() {
           company: honeypot,
         }),
       });
-      if (!res.ok) throw new Error("Request failed");
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        throw new Error(result.message || spam.errors.send);
+      }
       setStatus("sent");
-    } catch {
+    } catch (error) {
       setStatus("idle");
-      setError("Something went wrong sending that — call us instead and we'll do it live.");
+      setError(error instanceof Error ? error.message : spam.errors.send);
+    } finally {
+      resetProtection(submittedForm);
     }
   }
 
@@ -96,6 +106,7 @@ export default function HomeValueForm() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} noValidate>
+            <FormProtection />
             <h2 className="sr-only">What is my home worth?</h2>
 
             {/* The sentence */}
