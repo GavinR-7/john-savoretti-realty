@@ -5,16 +5,17 @@
   in pagination links.
 */
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 
 import ListingResults from "@/components/ListingResults";
 import { parseFilters, type SearchParams } from "@/lib/listing-search";
 import { getCitiesWithListings } from "@/lib/db/listings";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata("/rentals", {
   title: "Long Island Rentals",
   description:
     "Homes and apartments for rent across Nassau, Suffolk, and Queens. Filter by town, price, bedrooms, and bathrooms with John Savoretti Realty.",
-};
+});
 
 type Props = { searchParams: Promise<SearchParams> };
 

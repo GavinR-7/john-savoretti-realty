@@ -33,16 +33,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const feedUpdated = lastSynced ?? new Date();
 
   const staticPages: MetadataRoute.Sitemap = [
-    { url: BASE, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
+    // No lastModified on pages whose content isn't tied to the feed: "now" on
+    // every request is not a real modification date and teaches Google to
+    // ignore the field.
+    { url: BASE, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/buy`, lastModified: feedUpdated, changeFrequency: "hourly", priority: 0.9 },
     { url: `${BASE}/rentals`, lastModified: feedUpdated, changeFrequency: "hourly", priority: 0.8 },
     { url: `${BASE}/commercial`, lastModified: feedUpdated, changeFrequency: "hourly", priority: 0.7 },
-    { url: `${BASE}/agents`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/agents`, changeFrequency: "monthly", priority: 0.7 },
   ];
 
   const agentPages: MetadataRoute.Sitemap = agents.map((agent) => ({
     url: `${BASE}/agents/${agent.slug}`,
-    lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.6,
   }));

@@ -8,6 +8,7 @@
 */
 
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -36,11 +37,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? `${listing.address}, ${listing.city}, NY`
     : `${listing.style ?? "Home"} in ${listing.city}, NY`;
 
-  return {
+  return pageMetadata(`/listings/${mls}`, {
     title: headline,
-    // Metadata descriptions get truncated by Google around 155 chars.
-    description: listing.description?.slice(0, 155),
-  };
+    // Metadata descriptions get truncated by Google around 155 chars. A feed
+    // row with no remarks still gets a description built from its facts.
+    description:
+      listing.description?.slice(0, 155) ??
+      `${headline}. Listing details, photos and a link to talk to a John Savoretti Realty agent.`,
+    image: listing.image || undefined,
+  });
 }
 
 export default async function ListingPage({ params }: Props) {
