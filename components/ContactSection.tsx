@@ -10,6 +10,8 @@
 */
 
 import { useState, type FormEvent } from "react";
+import { FormProtection, readProtection, resetProtection } from "@/components/FormProtection";
+import { spam } from "@/content/spam";
 import { business } from "@/data/site";
 
 const INTENTS = ["Buying", "Selling", "Home valuation", "General question"];
@@ -25,8 +27,10 @@ export default function ContactSection() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const submittedForm = e.currentTarget;
+    const protection = readProtection(submittedForm);
     setError("");
 
     if (!name.trim() || (!phone.trim() && !email.trim())) {
@@ -40,6 +44,7 @@ export default function ContactSection() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          ...protection,
           formType: "contact",
           name,
           email,
@@ -49,13 +54,18 @@ export default function ContactSection() {
           company: honeypot,
         }),
       });
-      if (!res.ok) throw new Error("Request failed");
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        throw new Error(result.message || spam.errors.send);
+      }
       setStatus("sent");
-    } catch {
+    } catch (error) {
       setStatus("idle");
       setError(
-        `Something went wrong on our end — call us instead at ${business.phoneNassau}.`,
+        error instanceof Error ? error.message : spam.errors.send,
       );
+    } finally {
+      resetProtection(submittedForm);
     }
   }
 
@@ -129,6 +139,7 @@ export default function ContactSection() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} noValidate>
+              <FormProtection />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label

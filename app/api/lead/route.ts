@@ -13,6 +13,8 @@
 
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { z } from "zod";
+import { checkFormSpam, countRejection, logSubmission } from "@/lib/formSpam";
 
 /*
   Sender defaults to Resend's shared onboarding address, which works without
@@ -25,7 +27,19 @@ const FROM = process.env.LEAD_FROM_EMAIL || "onboarding@resend.dev";
 const TO = process.env.LEAD_TO_EMAIL;
 
 // Never echo the honeypot back into the email.
-const HIDDEN_FIELDS = new Set(["company"]);
+const HIDDEN_FIELDS = new Set(["company", "companyUrl", "renderedAt", "turnstileToken"]);
+
+const leadSchema = z.object({
+  formType: z.enum(["contact", "home-value"]),
+  name: z.string().trim().min(1).max(120),
+  phone: z.string().trim().max(40).default(""),
+  email: z.union([z.string().trim().email().max(254), z.literal("")]).default(""),
+  address: z.string().trim().max(300).optional(),
+  town: z.string().trim().max(120).optional(),
+  intent: z.string().trim().max(120).optional(),
+  message: z.string().trim().max(5000).optional(),
+}).refine((data) => Boolean(data.phone || data.email))
+  .refine((data) => data.formType !== "home-value" || Boolean(data.address && data.town));
 
 /*
   ABUSE LIMITS. This endpoint is public and every accepted request spends a
@@ -95,18 +109,21 @@ export async function POST(request: Request) {
   try {
     parsed = await request.json();
   } catch {
+    countRejection("zod");
     return NextResponse.json({ ok: false, message: "Bad request" }, { status: 400 });
   }
   if (!isSaneShape(parsed)) {
+    countRejection("zod");
     return NextResponse.json({ ok: false, message: "Bad request" }, { status: 400 });
   }
-  const data = parsed;
-
-  // Honeypot: real visitors never see the "company" field. If it's filled,
-  // a bot did it — pretend success so the bot moves on, but send nothing.
-  if (data.company) {
-    return NextResponse.json({ ok: true });
+  const blocked = await checkFormSpam(parsed, request);
+  if (blocked) return blocked;
+  const validated = leadSchema.safeParse(parsed);
+  if (!validated.success) {
+    countRejection("zod");
+    return NextResponse.json({ ok: false, message: "Check your contact details and try again." }, { status: 400 });
   }
+  const data = Object.fromEntries(Object.entries(validated.data).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
 
   // After the honeypot (bots shouldn't learn they're limited) and before any
   // send. The form shows its error state, which tells a person to call.
@@ -136,7 +153,6 @@ export async function POST(request: Request) {
         [!process.env.RESEND_API_KEY && "RESEND_API_KEY", !TO && "LEAD_TO_EMAIL"]
           .filter(Boolean)
           .join(" and "),
-      JSON.stringify(data),
     );
     return NextResponse.json(
       { ok: false, message: "We couldn't send that just now — please call the office." },
@@ -156,19 +172,20 @@ export async function POST(request: Request) {
 
     // The SDK reports delivery failures in `error` rather than throwing.
     if (error) {
-      console.error("Resend rejected lead:", error, JSON.stringify(data));
+      console.error("Resend rejected lead");
       return NextResponse.json(
         { ok: false, message: "We couldn't send that just now — please call the office." },
         { status: 500 },
       );
     }
   } catch (err) {
-    console.error("Lead send threw:", err, JSON.stringify(data));
+    console.error("Lead send threw");
     return NextResponse.json(
       { ok: false, message: "We couldn't send that just now — please call the office." },
       { status: 500 },
     );
   }
 
+  logSubmission("john-savoretti-realty");
   return NextResponse.json({ ok: true });
 }
