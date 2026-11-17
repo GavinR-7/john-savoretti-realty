@@ -14,60 +14,71 @@ export default function HeroCarousel({ listings }: { listings: Listing[] }) {
   const spotlights = listings;
 
   const [index, setIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false); // flips true on manual click
+  const [isPaused, setIsPaused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [hasFocus, setHasFocus] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(true);
+  const count = spotlights.length;
+  const activeIndex = count ? index % count : 0;
+  const autoAdvance = count > 1 && !isPaused && !isHovered && !hasFocus && !reducedMotion;
 
-  // ↓↓↓ YOU WRITE THIS ↓↓↓
-  // The auto-advance effect.
-  // - If isPaused, do nothing (return early — like the count-up's `if (!hasStarted) return`)
-  // - Otherwise setInterval that moves index forward, wrapping with %
-  // - Return a cleanup that clears the interval
   useEffect(() => {
+    if (!window.matchMedia) {
+      setReducedMotion(false);
+      return;
+    }
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(preference.matches);
+    update();
+    preference.addEventListener("change", update);
+    return () => preference.removeEventListener("change", update);
+  }, []);
 
-    if (isPaused) return;   // early guard — don't start a timer at all
+  useEffect(() => {
+    if (!autoAdvance) return;
+    const timer = setInterval(() => setIndex((value) => (value + 1) % count), AUTO_ADVANCE_MS);
+    return () => clearInterval(timer);
+  }, [autoAdvance, count]);
 
-    const id = setInterval(() => {
-        setIndex((i) => (i + 1) % spotlights.length);
-    }, AUTO_ADVANCE_MS);
-
-    return () => clearInterval(id);   // cleanup, inside the effect
-
-  }, [isPaused, spotlights.length]);
-  // ↑↑↑ YOU WRITE THIS ↑↑↑
-
-  // ↓↓↓ YOU WRITE THESE ↓↓↓
-  // next() and prev(): move the index (wrapping!), and pause the auto-advance.
   function next() {
-    setIndex((i) => (i + 1) % spotlights.length)
-    setIsPaused(true)
+    if (count < 2) return;
+    setIndex((value) => (value + 1) % count);
+    setIsPaused(true);
   }
+
   function prev() {
-    setIndex((i) => (i - 1 + spotlights.length) % spotlights.length)
-    setIsPaused(true)
+    if (count < 2) return;
+    setIndex((value) => (value - 1 + count) % count);
+    setIsPaused(true);
   }
-  // ↑↑↑ YOU WRITE THESE ↑↑↑
 
-  const current = spotlights[index];
-
-  // The data is now a live query rather than a hardcoded array, so an empty
-  // result is possible (nothing synced yet, everything filtered out). Without
-  // this, `current` is undefined and the whole homepage 500s.
-  if (!current) return null;
+  if (!count) return null;
 
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      role="region"
+      aria-label="Featured homes"
+      aria-roledescription="carousel"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocusCapture={() => setHasFocus(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHasFocus(false);
+      }}
+    >
       {/*
         All slides live in one flex track that we translate by -index * 100%,
         so moving between them animates instead of hard-cutting. `overflow
         hidden` on the viewport clips the rest.
 
-        motion-reduce:transition-none drops the animation for anyone who has
-        asked their OS for reduced motion — the slide still changes, it just
-        arrives instantly.
+        Reduced-motion preferences pause automatic changes and remove
+        the slide transition. The arrows remain available.
       */}
       <div className="overflow-hidden rounded-2xl">
         <div
           className="flex transition-transform duration-500 ease-out motion-reduce:transition-none"
-          style={{ transform: `translateX(-${index * 100}%)` }}
+          style={{ transform: `translateX(-${activeIndex * 100}%)` }}
         >
           {spotlights.map((listing, i) => (
             <Link
@@ -75,8 +86,8 @@ export default function HeroCarousel({ listings }: { listings: Listing[] }) {
               href={`/listings/${listing.mls}`}
               className="relative block w-full shrink-0"
               // Only the visible slide is a tab stop / exposed to screen readers.
-              aria-hidden={i !== index}
-              tabIndex={i === index ? undefined : -1}
+              aria-hidden={i !== activeIndex}
+              tabIndex={i === activeIndex ? undefined : -1}
             >
               <div className="relative aspect-[4/3] overflow-hidden">
                 <PropertyImage
@@ -94,20 +105,53 @@ export default function HeroCarousel({ listings }: { listings: Listing[] }) {
                   {listing.city} {listing.style} ·{" "}
                   {formatPrice(listing.price, listing.dealType)}
                 </p>
+                <p className="mt-1 text-[11px] leading-snug text-mist">
+                  MLS #{listing.mls}
+                  {listing.listOfficeName && ` · Listing courtesy of ${listing.listOfficeName}`}
+                </p>
+                {listing.status === "Coming soon" && listing.onMarketDate && (
+                  <p className="text-[11px] text-mist">On market {listing.onMarketDate}</p>
+                )}
               </div>
             </Link>
           ))}
         </div>
       </div>
 
-      <button type="button" onClick={prev} aria-label="Previous listing"
-        className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-atlantic shadow transition hover:bg-white">
-        ←
-      </button>
-      <button type="button" onClick={next} aria-label="Next listing"
-        className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-atlantic shadow transition hover:bg-white">
-        →
-      </button>
+      {count > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={prev}
+            aria-label="Previous listing"
+            className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-atlantic shadow transition hover:bg-white"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            aria-label="Next listing"
+            className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-atlantic shadow transition hover:bg-white"
+          >
+            →
+          </button>
+          <div className="mt-3 flex items-center justify-between text-xs text-mist">
+            <p aria-live={autoAdvance ? "off" : "polite"} aria-atomic="true">
+              Listing {activeIndex + 1} of {count}
+            </p>
+            {!reducedMotion && (
+              <button
+                type="button"
+                onClick={() => setIsPaused((value) => !value)}
+                className="rounded px-2 py-1 font-medium text-atlantic underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                {isPaused ? "Play slideshow" : "Pause slideshow"}
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

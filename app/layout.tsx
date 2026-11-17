@@ -34,14 +34,11 @@ const publicSans = Public_Sans({
   display: "swap",
 });
 
-// One place for the site origin: metadata, JSON-LD, sitemap and robots all read
-// it. TODO: set NEXT_PUBLIC_SITE_URL to the real domain at launch.
-const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://johnsavorettirealty.com"
-).replace(/\/$/, "");
+import { SITE_URL, IS_PUBLIC_LAUNCH } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  robots: { index: IS_PUBLIC_LAUNCH, follow: IS_PUBLIC_LAUNCH },
   title: {
     default:
       "John Savoretti Realty — Long Island Homes | Nassau & Suffolk Real Estate",
@@ -133,9 +130,14 @@ export default function RootLayout({
 
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).split("<").join(String.raw`\u003c`) }}
         />
 
+        {!IS_PUBLIC_LAUNCH && (
+          <div className="bg-fog px-4 py-2 text-center text-xs text-atlantic" role="note">
+            Website preview. Listing data and availability need brokerage confirmation.
+          </div>
+        )}
         <Header />
         <main id="main">{children}</main>
         <Footer />

@@ -94,9 +94,8 @@ export default async function ListingResults({
             <div className="mt-6 rounded-2xl border border-atlantic/10 bg-fog p-8 text-center sm:p-12">
               <h2 className="font-display text-2xl font-semibold text-harbor">{emptyTitle}</h2>
               <p className="mx-auto mt-3 max-w-xl text-mist">
-                Try widening the price range or clearing a filter. Our agents see
-                every home on the MLS the moment it lists, so tell us what
-                you&rsquo;re after and we&rsquo;ll find it.
+                Try widening the price range or clearing a filter. Tell us what you&rsquo;re looking for and a local agent can
+                help you explore available homes.
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <a

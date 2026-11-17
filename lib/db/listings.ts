@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 // Importing this from a client component is a BUILD ERROR, not a runtime
 // surprise: it would ship database queries to the browser.
 
@@ -14,6 +15,7 @@ import { db } from "@/lib/db";
 import { properties, propertyMedia, syncState, type PropertyRow, type MediaRow } from "@/lib/db/schema";
 import { eq, and, desc, asc, sql, gte, lte, count, inArray } from "drizzle-orm";
 import type { Listing } from "@/data/listings";
+import { publicListingConditions, rawText } from "@/lib/listing-policy";
 
 // MLS Grid prefixes Key/Id fields (KEYL2461951). Required when requesting,
 // MUST be stripped before public display. Compliance rule, not cosmetic.
@@ -66,6 +68,7 @@ function toStatus(
 */
 function rowToListing(row: PropertyRow, media: MediaRow[] = []): Listing {
   const dealType = toDealType(row.propertyType);
+  const raw = row.raw as Record<string, unknown>;
 
   // Photos arrive pre-sorted by `order`; the first is the cover shot and the
   // rest are the gallery. A row with no photos yet leaves image as "" so
@@ -107,6 +110,9 @@ function rowToListing(row: PropertyRow, media: MediaRow[] = []): Listing {
     listAgentFullName: row.listAgentFullName ?? undefined,
     listAgentMlsId: row.listAgentMlsId ?? undefined,
     listOfficeName: row.listOfficeName ?? undefined,
+    listOfficePhone: rawText(raw, "ListOfficePhone"),
+    listOfficeEmail: rawText(raw, "ListOfficeEmail"),
+    onMarketDate: rawText(raw, "OnMarketDate")?.slice(0, 10),
   };
 }
 
@@ -147,10 +153,7 @@ async function rowsToListings(rows: PropertyRow[]): Promise<Listing[]> {
   still permits distribution. This is legally binding, so it lives in one
   place that every query uses.
 */
-const displayable = and(
-  eq(properties.mlgCanView, true),
-  eq(properties.internetEntireListingDisplayYN, true),
-);
+const displayable = publicListingConditions;
 
 /*
   The SQL mirror of toDealType() above. That function reads a row's free-text
@@ -217,14 +220,14 @@ export async function getCommercialListings(limit = 24): Promise<Listing[]> {
   return rowsToListings(rows);
 }
 
-export async function getListingByMls(mls: string): Promise<Listing | null> {
+export const getListingByMls = cache(async (mls: string): Promise<Listing | null> => {
   const rows = await db
     .select()
     .from(properties)
     .where(and(displayable, eq(properties.listingId, `KEY${mls}`)))
     .limit(1);
   return rows[0] ? (await rowsToListings(rows))[0] : null;
-}
+});
 
 export async function getAllListingMlsNumbers(): Promise<string[]> {
   const rows = await db
@@ -325,9 +328,10 @@ export async function countListings(filters: ListingSearchFilters): Promise<numb
   (it should match his ListOfficeMlsId) and the storefront lights up with no
   other code change.
 */
-export const OFFICE_MLS_ID = "KEYJOSV01";
+export const OFFICE_MLS_ID = process.env.OFFICE_MLS_ID?.trim() ?? "";
 
 export async function getOfficeListings(limit = 15): Promise<Listing[]> {
+  if (!OFFICE_MLS_ID || OFFICE_MLS_ID === "KEYJOSV01") return [];
   const rows = await db
     .select()
     .from(properties)
@@ -339,6 +343,7 @@ export async function getOfficeListings(limit = 15): Promise<Listing[]> {
 
 /* Towns where John's own office actually has inventory. */
 export async function getOfficeCities(): Promise<string[]> {
+  if (!OFFICE_MLS_ID || OFFICE_MLS_ID === "KEYJOSV01") return [];
   const rows = await db
     .selectDistinct({ city: properties.city })
     .from(properties)
@@ -376,6 +381,6 @@ export async function getLastSyncedAt(): Promise<Date | null> {
   const [row] = await db
     .select({ lastRunAt: syncState.lastRunAt })
     .from(syncState)
-    .where(eq(syncState.resource, "Property"));
+    .where(and(eq(syncState.resource, "Property"), eq(syncState.lastRunStatus, "success")));
   return row?.lastRunAt ?? null;
 }

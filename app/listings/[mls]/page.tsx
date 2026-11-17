@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /*
   INDIVIDUAL LISTING PAGE — app/listings/[mls]/page.tsx
   One file → one page per listing, keyed by MLS number.
@@ -18,15 +20,10 @@ import { business } from "@/data/site";
 import ListingCard from "@/components/ListingCard";
 import ListingGallery from "@/components/ListingGallery";
 import IdxDisclaimer from "@/components/IdxDisclaimer";
-import { getListingByMls, getAllListingMlsNumbers, getListingsByCity } from "@/lib/db/listings";
+import { getListingByMls, getListingsByCity } from "@/lib/db/listings";
 
 
 type Props = { params: Promise<{ mls: string }> };
-
-export async function generateStaticParams() {
-  const mlsNumbers = await getAllListingMlsNumbers();
-  return mlsNumbers.map((mls) => ({ mls }));
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { mls } = await params;
@@ -81,9 +78,10 @@ export default async function ListingPage({ params }: Props) {
     { label: "Bedrooms", value: listing.beds },
     { label: "Bathrooms", value: listing.baths },
     { label: "Property type", value: listing.style },
+    { label: "On market date", value: listing.status === "Coming soon" ? listing.onMarketDate : undefined },
     { label: "Square feet", value: listing.squareFeet?.toLocaleString() },
     { label: "Rooms", value: listing.rooms },
-    { label: "Lot size", value: listing.lotSize ? `${listing.lotSize} acres` : undefined },
+    { label: "Lot size", value: listing.lotSize !== undefined ? `${listing.lotSize.toLocaleString("en-US")} sq ft` : undefined },
     { label: "Families", value: listing.numberOfFamilies },
     { label: "Year built", value: listing.yearBuilt },
     { label: "School district", value: listing.schoolDistrict },
@@ -91,7 +89,7 @@ export default async function ListingPage({ params }: Props) {
 
   const financials = [
     { label: "Price", value: formatPrice(listing.price, listing.dealType) },
-    { label: "Annual taxes", value: listing.taxes ? `$${listing.taxes.toLocaleString()}` : undefined },
+    { label: "Annual taxes", value: listing.taxes !== undefined ? `$${listing.taxes.toLocaleString()}` : undefined },
   ].filter((row) => row.value !== undefined);
 
   const moreInArea = (await getListingsByCity(listing.city, 4))
@@ -225,6 +223,12 @@ export default async function ListingPage({ params }: Props) {
                   {listing.listOfficeName && (
                     <p className="text-sm text-mist">
                       Listing courtesy of {listing.listOfficeName}
+                    </p>
+                  )}
+
+                  {(listing.listOfficePhone || listing.listOfficeEmail) && (
+                    <p className="mt-2 break-words text-sm text-mist">
+                      {[listing.listOfficePhone, listing.listOfficeEmail].filter(Boolean).join(" · ")}
                     </p>
                   )}
 

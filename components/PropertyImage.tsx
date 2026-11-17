@@ -21,6 +21,7 @@ type PropertyImageProps = {
   alt: string;
   sizes?: string;
   priority?: boolean; // true only for the hero image (it's above the fold)
+  fit?: "cover" | "contain";
 };
 
 export default function PropertyImage({
@@ -28,10 +29,11 @@ export default function PropertyImage({
   alt,
   sizes = "(max-width: 768px) 100vw, 33vw",
   priority = false,
+  fit = "cover",
 }: PropertyImageProps) {
-  const [errored, setErrored] = useState(false);
+  const [failedSrc, setFailedSrc] = useState<string>();
 
-  if (!src || errored) {
+  if (!src || failedSrc === src) {
     return (
       <div
         role="img"
@@ -66,8 +68,8 @@ export default function PropertyImage({
       fill
       sizes={sizes}
       priority={priority}
-      className="object-cover"
-      onError={() => setErrored(true)}
+      className={fit === "contain" ? "object-contain" : "object-cover"}
+      onError={() => setFailedSrc(src)}
     />
   );
 }

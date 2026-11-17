@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /*
   COMMERCIAL — app/commercial/page.tsx
   Same search experience as /buy, pre-scoped to commercial by the route.

@@ -71,7 +71,7 @@ export default function AboutSection() {
           <div className="mt-6 space-y-4 text-base leading-relaxed text-mist">
             <p>
               John Savoretti opened the doors on Hempstead Turnpike in 2001.
-              Twenty-five years later, the brokerage has grown to{" "}
+              Today, the brokerage works from{" "}
               {showStats ? "30+ agents across two offices" : "two offices"} — Franklin Square in Nassau and Smithtown in
               Suffolk — but it&rsquo;s still the kind of place where the
               broker&rsquo;s name is on the door and he picks up the phone.
@@ -79,9 +79,8 @@ export default function AboutSection() {
             <p>
               The approach hasn&rsquo;t changed either: tell people the truth
               about what their home is worth, never push anyone into a deal,
-              and treat every transaction like the family purchase it is. Most
-              of the business comes from past clients and their kids — that
-              only happens when you do it right the first time.
+              and treat every transaction like the family purchase it is. The team helps buyers and sellers across Nassau, Suffolk and
+              Queens, with a local office to call throughout the process.
             </p>
             {showStats && (
             <p>

@@ -18,10 +18,13 @@ import {
   toAreaSlug,
 } from "@/lib/db/listings";
 
-const BASE = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://johnsavorettirealty.com")
-  .replace(/\/$/, "");
+import { IS_PUBLIC_LAUNCH, SITE_URL as BASE } from "@/lib/site-config";
+
+export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (!IS_PUBLIC_LAUNCH) return [];
+
   const [mlsNumbers, cities, lastSynced] = await Promise.all([
     getAllListingMlsNumbers(),
     getCitiesWithListings(),
@@ -30,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Feed-backed pages change whenever the feed does, so they share the
   // sync timestamp rather than claiming to be fresh on every request.
-  const feedUpdated = lastSynced ?? new Date();
+  const feedUpdated = lastSynced ?? undefined;
 
   const staticPages: MetadataRoute.Sitemap = [
     // No lastModified on pages whose content isn't tied to the feed: "now" on
@@ -41,6 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/rentals`, lastModified: feedUpdated, changeFrequency: "hourly", priority: 0.8 },
     { url: `${BASE}/commercial`, lastModified: feedUpdated, changeFrequency: "hourly", priority: 0.7 },
     { url: `${BASE}/agents`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/privacy`, changeFrequency: "yearly", priority: 0.2 },
   ];
 
   const agentPages: MetadataRoute.Sitemap = agents.map((agent) => ({

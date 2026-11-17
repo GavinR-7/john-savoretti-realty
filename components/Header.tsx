@@ -92,7 +92,7 @@ export default function Header() {
           */}
           <BrandMark size={52} priority className="h-11 w-auto sm:h-13" />
           <span className="leading-tight">
-            <span className="block font-display text-base font-semibold text-atlantic sm:text-lg">
+            <span className="block whitespace-nowrap font-display text-sm font-semibold text-atlantic sm:text-base">
               John Savoretti Realty
             </span>
             <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-brass-deep">
@@ -102,28 +102,28 @@ export default function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <nav aria-label="Main" className="hidden items-center gap-6 lg:flex">
+        <nav aria-label="Main" className="hidden items-center gap-4 xl:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-ink transition-colors hover:text-channel"
+              className="whitespace-nowrap text-sm font-medium text-ink transition-colors hover:text-channel"
             >
               {link.label}
             </Link>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden shrink-0 items-center gap-4 md:flex">
           <a
             href={business.phoneNassauHref}
-            className="text-sm font-semibold text-atlantic transition-colors hover:text-channel"
+            className="whitespace-nowrap text-sm font-semibold text-atlantic transition-colors hover:text-channel"
           >
             {business.phoneNassau}
           </a>
           <Link
             href="/#home-value"
-            className="rounded-md bg-atlantic px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-channel"
+            className="whitespace-nowrap rounded-md bg-atlantic px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-channel"
           >
             What&rsquo;s my home worth?
           </Link>
@@ -132,7 +132,7 @@ export default function Header() {
         {/* Mobile menu button */}
         <button
           type="button"
-          className="rounded-md p-2 text-atlantic lg:hidden"
+          className="shrink-0 rounded-md p-2 text-atlantic xl:hidden"
           aria-expanded={open}
           aria-controls="mobile-menu"
           aria-label={open ? "Close menu" : "Open menu"}
@@ -153,7 +153,7 @@ export default function Header() {
         <nav
           id="mobile-menu"
           aria-label="Main"
-          className="border-t border-ink/10 bg-white px-4 pb-6 pt-2 lg:hidden"
+          className="max-h-[calc(100dvh-8rem)] overflow-y-auto border-t border-ink/10 bg-white px-4 pb-6 pt-2 xl:hidden"
         >
           {navLinks.map((link) => (
             <Link

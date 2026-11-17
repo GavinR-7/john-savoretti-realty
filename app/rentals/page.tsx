@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /*
   RENTALS — app/rentals/page.tsx
   The same search experience as /buy, pre-scoped to rentals by the route.

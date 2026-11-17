@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /*
   HOMEPAGE — app/page.tsx maps to the route "/".
   It's just an ordered assembly of sections; all the substance lives in

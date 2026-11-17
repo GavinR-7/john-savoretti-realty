@@ -219,7 +219,7 @@ export default function HomeValueForm() {
             <div className="mt-6 flex flex-wrap items-center gap-5">
               <button
                 type="submit"
-                disabled={status === "sending"}
+                disabled={status === "sending" || !process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
                 className="rounded-md bg-brass-light px-7 py-3.5 text-base font-semibold text-harbor transition-colors hover:bg-white disabled:opacity-60"
               >
                 {status === "sending" ? "Sending…" : "Send me my home's value"}

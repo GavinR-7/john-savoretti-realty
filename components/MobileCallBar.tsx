@@ -21,10 +21,10 @@ export default function MobileCallBar() {
         ☎ Call now
       </a>
       <a
-        href={business.smsHref}
+        href={business.smsHref ?? "/#contact"}
         className="flex items-center justify-center gap-2 bg-harbor py-4 text-sm font-semibold text-brass-light active:bg-channel"
       >
-        ✉ Text us
+        {business.smsHref ? "Text us" : "Send a message"}
       </a>
     </div>
   );

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /*
   PROPERTY SEARCH — app/buy/page.tsx
   The main browsing experience: the whole in-market feed, filtered and paged.

@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { useEffect, useId, useRef } from "react";
 import { spam } from "@/content/spam";
+import { business } from "@/data/site";
 
 type Turnstile = {
   render: (element: HTMLElement, options: { sitekey: string; action: string; callback: (token: string) => void; "expired-callback": () => void; "error-callback": () => void }) => string;
@@ -65,6 +66,12 @@ export function FormProtection() {
     <input type="hidden" name="renderedAt" ref={stamp} defaultValue="" />
     <input type="hidden" name="turnstileToken" ref={token} defaultValue="" />
     <div ref={container} />
+    {!sitekey && (
+      <p role="status" className="rounded-lg border border-atlantic/20 bg-fog p-3 text-sm text-atlantic">
+        Online inquiries are being set up. Please call{" "}
+        <a href={business.phoneNassauHref} className="font-semibold underline">{business.phoneNassau}</a>.
+      </p>
+    )}
     {sitekey ? <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" onReady={renderWidget} /> : null}
     <p className="text-xs">
       <a className="underline" href="/privacy">{spam.localPrivacyLabel}</a>{" · "}

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /*
   DYNAMIC AGENT PAGES — app/agents/[slug]/page.tsx
   One file → one page per agent (/agents/dennis-arango, etc.).

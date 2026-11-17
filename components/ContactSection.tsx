@@ -246,7 +246,7 @@ export default function ContactSection() {
 
               <button
                 type="submit"
-                disabled={status === "sending"}
+                disabled={status === "sending" || !process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
                 className="mt-6 w-full rounded-lg bg-atlantic px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-channel disabled:opacity-60 sm:w-auto"
               >
                 {status === "sending" ? "Sending…" : "Send message"}
