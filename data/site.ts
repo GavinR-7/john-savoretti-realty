@@ -37,7 +37,7 @@ export const business = {
   tagline: "Family-run Long Island brokerage since 2001",
 
   // TODO: confirm with John — his current site publishes JohnSavoretti@optonline.net,
-  // the spec says OfficeAdmin@JohnSavorettiRealty.com. Using the spec's for now.
+  // the destination for website leads still needs his confirmation.
   email: "JohnSavoretti@optonline.net",
 
   phoneNassau: "(516) 327-6400",
@@ -45,9 +45,8 @@ export const business = {
   phoneSuffolk: "(631) 656-8600",
   phoneSuffolkHref: "tel:+16316568600",
 
-  // TODO: office landlines usually can't receive SMS. Swap in a cell number
-  // (John's or a Twilio number) before launch so "Text us" actually works.
-  smsHref: "sms:+15163276400",
+  // Enable texting only after John confirms an SMS-capable business number.
+  smsHref: null as string | null,
 
   instagram: "https://www.instagram.com/john_savoretti_realty/",
   facebook: "https://www.facebook.com/JohnSavorettiRealEstate",

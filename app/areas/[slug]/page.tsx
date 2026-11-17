@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /*
   DYNAMIC AREA PAGES — app/areas/[slug]/page.tsx
   One file → a page per town: the curated towns in data/areas.ts (full
@@ -5,10 +7,9 @@
   the database (simpler layout — just the name, listings, and CTAs).
 
   The [slug] folder name is the magic: Next.js treats it as a URL parameter.
-  generateStaticParams() tells Next every slug at build time — curated
-  slugs union'd with slugs derived from real DB city values — so all of
-  them pre-render as static HTML, ideal for the local SEO these town
-  pages exist for ("homes for sale in Merrick NY" searches).
+  Feed-backed pages render on request so removals and permission changes
+  are reflected without another deployment. Curated towns stay available
+  even while their local inventory is empty.
 
   Next.js 15 quirk worth remembering: `params` is now a Promise, so the
   page is an async function that awaits it. Older tutorials show it as a
@@ -16,12 +17,13 @@
 */
 
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 import { notFound } from "next/navigation";
 
 import { areas, type Area } from "@/data/areas";
 import { business } from "@/data/site";
 import ListingCard from "@/components/ListingCard";
-import { getListingsByCity, getCitiesWithListings, toAreaSlug } from "@/lib/db/listings";
+import { getCitiesWithListings, getListingsByCity, toAreaSlug } from "@/lib/db/listings";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -38,24 +40,16 @@ async function resolvePlace(slug: string): Promise<Place | null> {
   return city ? { name: city } : null;
 }
 
-export async function generateStaticParams() {
-  const curatedSlugs = areas.map((area) => area.slug);
-  const cities = await getCitiesWithListings();
-  const citySlugs = cities.map((city) => toAreaSlug(city));
-  const slugs = Array.from(new Set([...curatedSlugs, ...citySlugs]));
-  return slugs.map((slug) => ({ slug }));
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const place = await resolvePlace(slug);
   if (!place) return {};
-  return {
+  return pageMetadata(`/areas/${slug}`, {
     title: `Homes for sale in ${place.name}, NY`,
     description: place.blurb
       ? `${place.blurb} Talk to a local John Savoretti Realty agent about buying or selling in ${place.name}.`
       : `Browse current listings in ${place.name}, NY with John Savoretti Realty.`,
-  };
+  });
 }
 
 export default async function AreaPage({ params }: Props) {

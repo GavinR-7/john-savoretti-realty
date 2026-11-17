@@ -1,143 +1,65 @@
-# John Savoretti Realty — Website
+# John Savoretti Realty
 
-A modern, mobile-first, lead-generating site for a family-run Long Island brokerage (est. 2001). Built with **Next.js 15 (App Router) + Tailwind CSS v4 + TypeScript**, deploys to **Vercel**.
+Next.js 15, React 19, TypeScript and Tailwind 4 for the brokerage's home search and inquiries. The production domain switch is pending. The current Vercel production alias can serve an older commit than the launch candidate.
 
----
+## Local verification
 
-## Run it locally (first time)
+Use Node.js 24, matching the configured Vercel runtime.
 
-Requirements: **Node.js 20+** (check with `node -v`; install from nodejs.org if needed).
+    npm ci
+    npm test
+    npm run typecheck
+    npm run build
 
-```bash
-cd john-savoretti-realty
-npm install        # downloads dependencies into node_modules (one-time, ~1-2 min)
-npm run dev        # starts the dev server
-```
-Vercel Link: https://john-savoretti-realty.vercel.app/
+Copy .env.example into a private .env.local and supply service credentials through the approved provider dashboards. Feed pages query Neon on request, so withdrawn or restricted records can disappear without a rebuild. The build still needs a syntactically valid DATABASE_URL. Verification fixtures use stand-ins and make no licensed feed, Blob or email calls.
 
-Open **http://localhost:3000**. Edits to any file hot-reload instantly.
+    npm run dev -- --hostname 127.0.0.1
 
-When you submit a form, the lead prints in the **terminal** running `npm run dev` — that's your "inbox" during development (see `app/api/lead/route.ts` to wire real email later).
+Forms send through Resend after server-verified Turnstile. Missing keys produce a call option and unavailable state. The server logs acceptance or rejection counts without form contents. The per-instance IP limit is best effort.
 
----
+## Content and data
 
-## Project tour
+- data/site.ts holds the approved business facts and safe content flags. Sample reviews and unsupported statistics default to hidden.
+- The original crest is public/logo.png. Any replacement or recoloring needs client approval.
+- lib/db/listings.ts serves all public data queries and shares the IDX permission and status gate in lib/listing-policy.ts. Address fields honor seller display permission.
+- OFFICE_MLS_ID must match the actual licensed office. The earlier guessed value is rejected. Approved agent IDs belong in data/agents.ts.
+- Public media URLs are re-hosted in Blob. Signed MLS photo download URLs must stay out of client code, source control and logs.
+- lib/mls/sync.ts handles feed replication. Use the package sync commands, which set the required server condition.
+- Deployment changes and data imports have separate review and verification steps.
 
-```
-app/
-  layout.tsx          → wraps every page: fonts, SEO metadata, JSON-LD, Header/Footer
-  page.tsx            → the homepage (just assembles sections in order)
-  globals.css         → Tailwind theme tokens: colors, fonts, signature-input styles
-  api/lead/route.ts   → POST /api/lead — both forms submit here
-  areas/[slug]/       → ONE file that generates ELEVEN town pages (local SEO)
-  sitemap.ts          → auto-served at /sitemap.xml
-  robots.ts           → auto-served at /robots.txt
-components/           → each homepage section is its own file
-data/
-  site.ts             → SINGLE SOURCE OF TRUTH: phones, offices, stats, agents
-  listings.ts         → the 8 featured listings (real MLS facts, placeholder photos)
-  areas.ts            → the 11 towns (add one here → a new page appears)
-  testimonials.ts     → 3 SAMPLE reviews (visibly badged until replaced)
-```
+## Preview and production
 
-The pattern to internalize: **content lives in `/data`, presentation lives in `/components`**. Change a phone number once in `data/site.ts` and it updates everywhere.
+NEXT_PUBLIC_SITE_MODE defaults to preview. Preview pages carry noindex and an explicit preview notice, robots disallows crawling, and the sitemap is empty. Set live mode only on the approved production deployment after the license, data, domain and contact-delivery checks. Vercel Preview remains non-indexable even if the mode is set incorrectly.
 
----
+Use NEXT_PUBLIC_SITE_URL for the chosen canonical HTTPS origin. Both the origin and public mode are build-time values, so redeploy after changing them.
 
-## ⚠️ Swap-in checklist (before showing John / before launch)
+    npm run launch:check -- --target preview
+    npm run launch:check -- --target production
 
-**For the pitch demo:**
-- [ ] Listing photos are Unsplash **placeholders** (real MLS photos are licensed — don't copy them from the old site). Get originals from John, drop them in `/public/listings/`, and point each listing's `image` in `data/listings.ts` at `/listings/filename.jpg`.
-- [ ] Headshot: add John's photo per the comment in `components/AboutSection.tsx`.
-- [ ] Reviews: replace the 3 samples in `data/testimonials.ts` with **real, exact quotes** from his Google/Zillow reviews (with his OK) and set `isSample: false`.
-- [ ] Logo: if John has one, replace the "JS" roundel in `Header.tsx` and `Footer.tsx`.
+The checker reads the current process environment and prints variable names and fixed reasons only. Missing or unsafe configuration exits nonzero. A config-ready result still lists actual license, delivery, DNS, content and runtime checks as unknown until verified. Do not paste secret values into reports or chat.
 
-**Before real launch:**
-- [ ] **Email**: confirm with John — his old site shows `JohnSavoretti@optonline.net`, the spec says `OfficeAdmin@JohnSavorettiRealty.com`. Set the right one in `data/site.ts`.
-- [ ] **SMS number**: "Text us" currently points at the office landline, which likely can't receive texts. Swap `smsHref` in `data/site.ts` to a cell or Twilio number.
-- [ ] **Compliance PDFs**: the NY Fair Housing Notice / SOP / accommodations links currently point at the **old vendor's domain** (vlshomes.com). Download them, put copies in `/public/docs/`, and update `business.compliance` to `/docs/...` — if he leaves that vendor, the legally required links die otherwise.
-- [ ] **Verify the 8 MLS numbers/prices** are still current (listings move).
-- [ ] **Domain**: update `metadataBase` in `app/layout.tsx` and `BASE` in `app/sitemap.ts` + `app/robots.ts`.
-- [ ] **Wire form email** via Resend — instructions are inline in `app/api/lead/route.ts`. Put the key in `.env.local` (never commit it; see `.env.example`).
+Required settings are listed in .env.example. Confirm Preview and Production separately. Resend's shared onboarding sender can deliver only to its account owner. Production needs a verified sender and John's chosen recipient. Turnstile needs the exact allowed hostnames. The cron route fails closed without CRON_SECRET.
 
----
+## Launch sequence
 
-## Deploy to Vercel (free tier is fine)
+1. Review the combined feature candidate and keep preview indexing off.
+2. Confirm John's licensed IDX scope and production token, office/agent IDs, lead inbox, contact numbers, content and current NY notices.
+3. Inspect the target schema and Drizzle migration history after backup and change approval. A database originally created with drizzle-kit push needs its matching existing schema baselined through the approved migration workflow. Validate on a staging copy, drain all pre-lease sync processes, then apply 0001_sync_lease_cleanup.sql before running the new sync version.
+4. Preserve the existing demo dataset and media. Use an approved staged production import. Keep one import writer and avoid enabling scheduled runs until its baseline is accepted.
+5. Verify licensed display permissions, removal behavior, photos, search, attribution, successful sync age and the required MLS presentation. Obtain the approved MLS source/logo and legal notices for the final display.
+6. Verify both lead forms deliver to the approved recipient and pass/reject the real Turnstile checks.
+7. Merge and deploy through the normal review gate, with live mode on Production only when those checks are complete.
+8. Attach the domain in this Vercel project. Use its current Domains instructions for apex/www and canonical redirects. Preserve existing MX, mail-related TXT and other service records. DNS values in old notes may be outdated.
+9. Confirm HTTPS, redirects, contact delivery, licensed listings, cron success, robots and sitemap on the custom domain. Complete client sign-off, then submit the approved sitemap.
 
-1. Push to GitHub:
-   ```bash
-   git init && git add -A && git commit -m "John Savoretti Realty v1"
-   gh repo create john-savoretti-realty --private --source=. --push
-   ```
-2. Go to **vercel.com** → Add New → Project → import the repo. Vercel auto-detects Next.js; click **Deploy**. You get a live `*.vercel.app` URL in ~2 minutes — that's your demo link for John.
-3. Custom domain (after he buys one, e.g. on Namecheap): Vercel → Project → Settings → Domains → add it, then at the registrar set:
-   - `A` record, host `@`, value `76.76.21.21`
-   - `CNAME` record, host `www`, value `cname.vercel-dns.com`
-   - DNS can take minutes to a few hours to propagate.
-4. Set the production env vars, schema and first import: see **Production** below.
+The operator's private launch packet contains the client coordination, exact release head, verified tests and remaining external decisions. Keep client payment details, raw handoffs and credentials outside this repository.
 
----
+## Service operations
 
-## Production: database, env vars and the first import
+    npm run db:generate
+    npm run db:migrate
+    npm run sync
 
-The homepage, search, listing pages and sitemap read Postgres (Neon). **A build without `DATABASE_URL` fails**, so the database comes first.
+Never migrate, clear data or run a full import as part of a routine build. Inspect scripts/cleanup-media.ts and its selected store before any explicitly approved destructive cleanup. A successful local test or build does not verify provider credentials, the real license, delivered mail or a domain cutover.
 
-### 1. Create the services (Gavin, in the dashboards)
-- **Neon Postgres**: create a project (Vercel → Storage → Neon works and sets `DATABASE_URL` itself). Use the *pooled* connection string.
-- **Vercel Blob** store, connected to this project. It sets `BLOB_READ_WRITE_TOKEN`.
-- **Resend** account. Verify `johnsavorettirealty.com` once the domain is ours (until then the shared sender can only email the Resend account owner).
-
-### 2. Environment variables (Vercel → Project → Settings → Environment Variables, Production)
-
-| Variable | What it is | Required |
-|---|---|---|
-| `DATABASE_URL` | Neon pooled connection string | yes; the build fails without it |
-| `MLSGRID_TOKEN` | MLS Grid API bearer token | yes |
-| `MLSGRID_API_URL` | MLS Grid base URL from the data license | yes |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob (photos re-hosted by the sync) | yes |
-| `CRON_SECRET` | Long random string; Vercel Cron sends it as a bearer token, and the sync route refuses to run without it | yes |
-| `RESEND_API_KEY` | Resend API key for the lead form | yes; a failed send shows the form's error |
-| `LEAD_TO_EMAIL` | Where leads go (confirm with John) | yes |
-| `LEAD_FROM_EMAIL` | e.g. `Website Leads <leads@johnsavorettirealty.com>` once the domain is verified in Resend | after domain verification |
-| `NEXT_PUBLIC_SITE_URL` | `https://johnsavorettirealty.com` (canonical, sitemap, robots) | yes, at launch |
-
-Values never go in git or chat. Locally the same names go in `.env.local`.
-
-### 3. Create the schema
-The schema lives in `lib/db/schema.ts`; the SQL is in `drizzle/` (generated with `npm run db:generate`). With `DATABASE_URL` for the production database in `.env.local`:
-
-```bash
-npm run db:migrate     # applies drizzle/*.sql in order and records them
-```
-
-If the production database was already created with `drizzle-kit push` (tables exist but drizzle's migrations table doesn't), **don't run migrate** (it would fail on "table already exists"). Run `npx drizzle-kit push` instead and check it reports no changes. After a schema change: edit `schema.ts`, `npm run db:generate`, commit the new SQL, then `npm run db:migrate`.
-
-### 4. The one-time full import (local, not on Vercel)
-```bash
-npm run sync           # reads .env.local; full import on an empty sync_state
-```
-The first run pulls every listing and re-hosts thousands of photos in Blob. It takes hours, which is why it never runs inside a serverless function. It records a watermark in `sync_state`. If it stops partway, run it again: the watermark only advances after a complete pass, so it repeats the query, but rows are re-upserted and photos already in Blob are skipped, so only the unfinished work takes time.
-
-### 5. Keep it current
-`vercel.json` schedules `/api/cron/sync` every 15 minutes. That route is incremental only: it refuses to run until step 4 has left a watermark, and it stops before the next record or photo when its time budget runs out, leaving the watermark unchanged so the next run picks up the rest. **Check the Vercel plan:** at the time of writing, Hobby allows cron jobs at most once a day, so an every-15-minutes schedule needs Pro (or a slower schedule).
-
-### 6. Launch flags (`data/site.ts` → `launchFlags`)
-Both are `false` (hidden) by default:
-- `showUnverifiedStats`: the $47M / 58 homes / 30+ agents / BBB A+ / 5.0★ figures. Off, the trust strip is hidden and the sentences quoting them fall back to plain wording. Turn it on only after John sources each figure (correct `stats` to match).
-- `showSampleTestimonials`: the three badged sample reviews. Off, they are filtered out, and the section disappears when no real review is left. Real reviews (`isSample: false`) always show.
-
----
-
-## Learning exercises (do these — they're the reps)
-
-1. **Token change**: in `app/globals.css`, change `--color-brass` and watch every accent on the site update. That's design tokens.
-2. **Add a listing**: copy an object in `data/listings.ts`, change the facts, save. It appears in the grid *and* on its town page with zero component edits.
-3. **Add a town**: add one object to `data/areas.ts` → a whole new SEO page exists at `/areas/your-slug`. Understand *why* (read `app/areas/[slug]/page.tsx`).
-4. **Break it on purpose**: delete a `}` in `Hero.tsx`, read the error overlay top-to-bottom, fix it. Error-reading is the skill.
-
-## v2 roadmap (the upsell)
-
-- `/agents` page with the full ~30-agent roster (same data-driven pattern)
-- Real MLS/IDX feed instead of the static listings array
-- AI chatbot trained on John's FAQs/listings (the $1,000–1,800 tier)
-- Missed-call text-back + review-request automation (the $2,000+ tier)
+Security updates stay within the existing framework major. package.json overrides pin compatible fixes for vulnerable transitive CSS, HTTP and validation packages. Recheck npm audit and the build when updating the lockfile.

@@ -55,15 +55,98 @@ import "server-only";
   learned a listing was gone and it stayed on the site forever. We now request
   them and delete locally.
 */
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { put, del } from "@vercel/blob";
 import sharp from "sharp";
-import { properties, propertyMedia, syncState } from "@/lib/db/schema";
+import { mediaCleanup, properties, propertyMedia, syncState } from "@/lib/db/schema";
 
 const API_URL = process.env.MLSGRID_API_URL!; // https://api-demo.mlsgrid.com/v2
 const TOKEN = process.env.MLSGRID_TOKEN!;
 const ORIGINATING_SYSTEM = "onekey2";
 const RESOURCE = "Property";
+
+type SyncGuard = {
+  owner: string;
+  renew: () => Promise<void>;
+  write: (query: any) => Promise<any>;
+  batch: (queries: any[]) => Promise<any[]>;
+  release: () => Promise<void>;
+};
+
+async function acquireLease(db: any): Promise<SyncGuard | null> {
+  const owner = randomUUID();
+  const expiry = sql`clock_timestamp() + interval '120 seconds'`;
+  const acquired = await db.insert(syncState).values({
+    resource: RESOURCE, leaseOwner: owner, leaseExpiresAt: expiry,
+  }).onConflictDoUpdate({
+    target: syncState.resource,
+    set: { leaseOwner: owner, leaseExpiresAt: expiry },
+    setWhere: or(isNull(syncState.leaseOwner), lte(syncState.leaseExpiresAt, sql`clock_timestamp()`)),
+  }).returning({ owner: syncState.leaseOwner });
+  if (acquired.length !== 1 || acquired[0].owner !== owner) return null;
+
+  // Neon HTTP batches are transactions. Renewing locks the lease row until
+  // the batch commits; a lost/expired owner aborts before any mutation.
+  // count=0 deliberately raises division by zero and rolls back the batch.
+  const fence = () => db.execute(sql`
+    WITH renewed AS (
+      UPDATE ${syncState}
+      SET lease_expires_at = clock_timestamp() + interval '120 seconds'
+      WHERE resource = ${RESOURCE} AND lease_owner = ${owner}
+        AND lease_expires_at > clock_timestamp()
+      RETURNING resource
+    )
+    SELECT 1 / count(*)::integer AS fenced FROM renewed
+  `);
+  const batch = async (queries: any[]) => {
+    const results = await db.batch([fence(), ...queries]);
+    return results.slice(1);
+  };
+  return {
+    owner,
+    batch,
+    async renew() { await batch([]); },
+    async write(query: any) { return (await batch([query]))[0]; },
+    async release() {
+      await db.update(syncState).set({ leaseOwner: null, leaseExpiresAt: null }).where(
+        and(eq(syncState.resource, RESOURCE), eq(syncState.leaseOwner, owner)),
+      );
+    },
+  };
+}
+
+function queueCleanup(db: any, url: string, listingKey: string) {
+  return db.insert(mediaCleanup).values({ blobUrl: url, listingKey }).onConflictDoNothing();
+}
+
+async function cleanBlob(db: any, guard: SyncGuard, url: string, progress: Progress) {
+  await guard.renew();
+  // A timed-out database commit may have attached an upload before its
+  // compensating cleanup record was queued. Never delete a referenced URL.
+  const referenced = await db.select({ key: propertyMedia.mediaKey }).from(propertyMedia)
+    .where(eq(propertyMedia.localUrl, url)).limit(1);
+  if (!referenced.length) {
+    try {
+      await del(url);
+    } catch {
+      progress.mediaFailed += 1;
+      console.warn("MLS Blob deletion is pending; its durable cleanup record was retained.");
+      return;
+    }
+  }
+  await guard.write(db.delete(mediaCleanup).where(eq(mediaCleanup.blobUrl, url)));
+}
+
+async function drainCleanup(db: any, guard: SyncGuard, progress: Progress, shouldStop: () => boolean) {
+  const pending = await db.select().from(mediaCleanup).limit(100);
+  for (const row of pending) {
+    if (shouldStop()) return false;
+    await cleanBlob(db, guard, row.blobUrl, progress);
+  }
+  const remaining = await db.select({ url: mediaCleanup.blobUrl }).from(mediaCleanup).limit(1);
+  return remaining.length === 0;
+}
 
 /*
   ── MARKET FILTER ─────────────────────────────────────────────────────────
@@ -145,9 +228,9 @@ async function throttle() {
 
 async function fetchPage(url: string): Promise<MlsGridPage> {
   await throttle();
-  const res = await fetch(url, { headers });
+  const res = await fetch(url, { headers, signal: AbortSignal.timeout(30_000) });
   if (!res.ok) {
-    throw new Error(`API returned ${res.status}: ${await res.text()}`);
+    throw new Error(`MLS page request failed with status ${res.status}`);
   }
   return (await res.json()) as MlsGridPage;
 }
@@ -238,9 +321,13 @@ function stripSignature(url: string): string {
   try {
     const u = new URL(url);
     u.pathname = u.pathname.replace(/^\/token=[^/]*/, "");
+    u.search = "";
+    u.hash = "";
+    u.username = "";
+    u.password = "";
     return u.toString();
   } catch {
-    return url;
+    return "";
   }
 }
 
@@ -264,16 +351,15 @@ async function syncMediaForProperty(
   listingKey: string,
   media: any[],
   progress: Progress,
+  guard: SyncGuard,
   shouldStop: () => boolean = () => false,
 ) {
-  // Only photos the MLS says we may publish.
-  const publishable = (media ?? []).filter(
-    (m) => Array.isArray(m?.Permission) && m.Permission.includes("Public") && m?.MediaKey && m?.MediaURL,
+  if (!Array.isArray(media)) throw new Error("MLS media expansion is missing or invalid.");
+  // Reconcile the complete expansion, including an empty/revoked photo set.
+  const publishable = media.filter(
+    (m) => Array.isArray(m?.Permission) && m.Permission.includes("Public") && m?.MediaKey,
   );
-  if (!publishable.length) return;
-
-  // ONE query for the whole property's dedup check, not one per photo.
-  const incomingKeys = publishable.map((m) => String(m.MediaKey));
+  const incomingKeys = new Set(publishable.map((m) => String(m.MediaKey)));
   const existingRows = await db
     .select({
       mediaKey: propertyMedia.mediaKey,
@@ -281,11 +367,25 @@ async function syncMediaForProperty(
       localUrl: propertyMedia.localUrl,
     })
     .from(propertyMedia)
-    .where(inArray(propertyMedia.mediaKey, incomingKeys));
+    .where(eq(propertyMedia.listingKey, listingKey));
 
   const existing = new Map<string, { stamp: Date | null; localUrl: string | null }>(
     existingRows.map((r: any) => [r.mediaKey, { stamp: r.stamp, localUrl: r.localUrl }]),
   );
+
+  const removed = existingRows.filter((row: any) => !incomingKeys.has(String(row.mediaKey)));
+  if (removed.length) {
+    const urls = removed.map((row: any) => row.localUrl).filter(Boolean) as string[];
+    // Queue the actual URLs and remove public references in one fenced
+    // transaction. The independent queue survives property cascades.
+    await guard.batch([
+      ...urls.map((url) => queueCleanup(db, url, listingKey)),
+      db.delete(propertyMedia).where(
+        inArray(propertyMedia.mediaKey, removed.map((row: any) => String(row.mediaKey))),
+      ),
+    ]);
+    for (const url of urls) await cleanBlob(db, guard, url, progress);
+  }
 
   const work: { item: any; supersedes: string | null }[] = [];
   for (const item of publishable) {
@@ -297,8 +397,12 @@ async function syncMediaForProperty(
     if (prior) {
       const sameStamp =
         (prior.stamp?.getTime() ?? null) === (incomingStamp?.getTime() ?? null);
-      if (sameStamp) {
-        progress.mediaSkipped += 1; // unchanged — no download
+      if (sameStamp && prior.localUrl) {
+        // The feed can reorder an existing photo without changing its bytes.
+        await guard.write(db.update(propertyMedia).set({
+          order: typeof item.Order === "number" ? item.Order : 0,
+        }).where(eq(propertyMedia.mediaKey, String(item.MediaKey))));
+        progress.mediaSkipped += 1;
         continue;
       }
       // Changed image reusing the same key: re-download and drop the old blob.
@@ -312,11 +416,16 @@ async function syncMediaForProperty(
   for (const { item, supersedes } of work) {
     // Out of time: leave the rest. They have no stored row yet, so the next
     // run (which re-reads this property from the old watermark) fetches them.
-    if (shouldStop()) return;
+    if (shouldStop()) return false;
     // One bad photo must not take down the property or the run.
     try {
       await waitForDownloadBudget();
       await throttle(); // shares the 2 req/sec budget with property pages
+      if (shouldStop()) return false;
+      await guard.renew();
+      if (typeof item.MediaURL !== "string" || !item.MediaURL) {
+        throw new Error("Public MLS photo is missing its download URL.");
+      }
 
       /*
         ⚠️ SINGLE-USE URL: downloaded here, in the same run, moments after the
@@ -327,6 +436,7 @@ async function syncMediaForProperty(
         // ⚠️ REQUIRED: MLS Grid blocks media requests (429) unless the
         // user-agent header carries the OAuth token.
         headers: { "user-agent": TOKEN },
+        signal: AbortSignal.timeout(30_000),
       });
       if (!res.ok) throw new Error(`media download ${res.status}`);
 
@@ -349,14 +459,17 @@ async function syncMediaForProperty(
       progress.bytesOriginal += original.byteLength;
       progress.bytesCompressed += compressed.byteLength;
 
-      const blob = await put(`properties/${listingKey}/${item.MediaKey}.webp`, compressed, {
+      await guard.renew();
+      // Each lease uses its own object path. A late run cannot overwrite a
+      // newer owner's photograph before the database fence rejects it.
+      const blob = await put(`properties/${listingKey}/${item.MediaKey}-${guard.owner}.webp`, compressed, {
         access: "public",
         addRandomSuffix: false,
-        allowOverwrite: true,
+        allowOverwrite: false,
         contentType: "image/webp",
       });
 
-      await db.insert(propertyMedia).values({
+      const attach = db.insert(propertyMedia).values({
         mediaKey: String(item.MediaKey),
         listingKey,
         order: typeof item.Order === "number" ? item.Order : 0,
@@ -377,14 +490,20 @@ async function syncMediaForProperty(
             : null,
         },
       });
-
-      // Only now that the replacement is safely stored, bin the old blob.
+      try {
+        await guard.batch([
+          ...(supersedes && supersedes !== blob.url ? [queueCleanup(db, supersedes, listingKey)] : []),
+          attach,
+        ]);
+      } catch (error) {
+        // This append-only compensation is safe even after lease loss: the
+        // unique upload belongs to this run. Cleanup checks active references
+        // before deleting, covering an ambiguous transaction response.
+        await queueCleanup(db, blob.url, listingKey);
+        throw error;
+      }
       if (supersedes && supersedes !== blob.url) {
-        try {
-          await del(supersedes);
-        } catch (err) {
-          console.warn(`    ⚠ could not delete superseded blob: ${err instanceof Error ? err.message : err}`);
-        }
+        await cleanBlob(db, guard, supersedes, progress);
       }
 
       const pct = Math.round((1 - compressed.byteLength / original.byteLength) * 100);
@@ -394,13 +513,13 @@ async function syncMediaForProperty(
       );
 
       progress.mediaStored += 1;
-    } catch (err) {
+    } catch {
       progress.mediaFailed += 1;
-      console.warn(
-        `    ⚠ photo ${item.MediaKey} failed: ${err instanceof Error ? err.message : err}`,
-      );
+      // Provider errors can contain the signed URL or request credentials.
+      console.warn("MLS photo download or storage failed; the sync will retain its watermark.");
     }
   }
+  return true;
 }
 
 /*
@@ -464,7 +583,14 @@ function mapProperty(record: any) {
     internetAddressDisplayYN: record.InternetAddressDisplayYN ?? null,
     mlgCanView: record.MlgCanView ?? null,
     modificationTimestamp: new Date(record.ModificationTimestamp),
-    raw: record, // the whole thing, so we never lose data
+    // Expanded MediaURL values are single-use credentials. Keep provenance
+    // in property_media.source_url and exclude those credentials from raw.
+    raw: {
+      ...record,
+      Media: Array.isArray(record.Media)
+        ? record.Media.map(({ MediaURL: _downloadUrl, ...fields }: any) => fields)
+        : record.Media,
+    },
     syncedAt: new Date(),
   };
 }
@@ -511,12 +637,29 @@ export type SyncResult = Progress & {
 };
 
 export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
+  const { db } = await import("@/lib/db");
+  const guard = await acquireLease(db);
+  if (!guard) {
+    return {
+      received: 0, upserted: 0, deleted: 0, skipped: 0, pages: 0, outOfMarket: 0,
+      mediaStored: 0, mediaSkipped: 0, mediaReplaced: 0, mediaFailed: 0,
+      bytesOriginal: 0, bytesCompressed: 0, highWater: null,
+      status: "skipped", message: "Another MLS sync holds the database lease.", bytesDownloaded: 0,
+    };
+  }
+  try {
+    return await runOwnedSync(db, guard, options);
+  } finally {
+    try { await guard.release(); }
+    catch { console.warn("MLS sync lease release was not confirmed; it will expire."); }
+  }
+}
+
+async function runOwnedSync(db: any, guard: SyncGuard, options: SyncOptions): Promise<SyncResult> {
   const log = options.log ?? ((m: string) => console.log(m));
   const startedAt = Date.now();
   const outOfBudget = () =>
     options.budgetMs !== undefined && Date.now() - startedAt >= options.budgetMs;
-
-  const { db } = await import("@/lib/db");
 
   // ── Where did we get to last time? ──────────────────────────────────────
   const [state] = await db
@@ -561,26 +704,28 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
     const row = {
       resource: RESOURCE,
       // Never move the watermark backwards if a run received nothing.
-      lastModificationTimestamp: complete ? (progress.highWater ?? since) : since,
+      lastModificationTimestamp: sql`greatest(${syncState.lastModificationTimestamp}, ${complete ? (progress.highWater ?? since) : since})`,
       lastRunAt: new Date(),
       lastRunStatus: status,
       recordsProcessed: progress.received,
     };
-    await db.insert(syncState).values(row).onConflictDoUpdate({
-      target: syncState.resource,
-      set: row,
-    });
+    await guard.write(db.update(syncState).set(row).where(eq(syncState.resource, RESOURCE)));
   }
 
   try {
     let url: string | undefined = buildFirstPageUrl(since);
-    let stoppedForBudget = false;
+    const cleanupComplete = await drainCleanup(db, guard, progress, outOfBudget);
+    let stoppedForBudget = !cleanupComplete && outOfBudget();
+    if (!cleanupComplete && !stoppedForBudget) {
+      throw new Error("MLS Blob cleanup is still pending; the watermark was retained.");
+    }
 
     // ── THE PAGINATION LOOP ───────────────────────────────────────────────
     // Strictly sequential: one page in flight at a time, following their
     // nextLink until it stops coming back. Never parallelised — their Best
     // Practices forbid concurrent requests.
     while (url && !stoppedForBudget) {
+      await guard.renew();
       const page: MlsGridPage = await fetchPage(url);
       const records = page.value ?? [];
       progress.pages += 1;
@@ -599,6 +744,7 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
           stoppedForBudget = true;
           break;
         }
+        await guard.renew();
         progress.received += 1;
 
         // Track the timestamp FIRST — before any decision to store, delete,
@@ -616,39 +762,44 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
           continue;
         }
 
-        /*
-          MARKET GATE. The API won't filter on county (see ALLOWED_COUNTIES),
-          so we drop out-of-market records here — deliberately AFTER the
-          watermark update above, so their timestamps still count and we don't
-          re-request them forever, and BEFORE the upsert and any photo
-          download, which is where the bandwidth and storage actually go.
-        */
-        if (!isInMarket(record.CountyOrParish)) {
-          progress.outOfMarket += 1;
-          continue;
-        }
-
-        if (record.MlgCanView === false) {
-          // DELETION. property_media rows go with it via the FK's ON DELETE
-          // CASCADE (verified against the live database).
-          await db
-            .delete(properties)
-            .where(eq(properties.listingKey, record.ListingKey));
-          progress.deleted += 1;
-          pageDeletes += 1;
+        // Tombstones can omit county. Apply withdrawals before the market
+        // filter, and remove old local rows when a listing leaves our market.
+        const withdrawn = record.MlgCanView === false;
+        if (withdrawn || !isInMarket(record.CountyOrParish)) {
+          await syncMediaForProperty(db, String(record.ListingKey), [], progress, guard);
+          await guard.write(db.delete(properties).where(eq(properties.listingKey, record.ListingKey)));
+          if (withdrawn) {
+            progress.deleted += 1;
+            pageDeletes += 1;
+          } else {
+            progress.outOfMarket += 1;
+          }
           continue;
         }
 
         const row = mapProperty(record);
-        await db.insert(properties).values(row).onConflictDoUpdate({
+        await guard.write(db.insert(properties).values(row).onConflictDoUpdate({
           target: properties.listingKey,
           set: row,
-        });
+          setWhere: lte(properties.modificationTimestamp, row.modificationTimestamp),
+        }));
         progress.upserted += 1;
         pageUpserts += 1;
 
-        // Photos arrive on the same payload via $expand=Media.
-        await syncMediaForProperty(db, row.listingKey, record.Media, progress, outOfBudget);
+        // Public photo permission cannot override a listing-level IDX or
+        // whole-listing display revocation. Hide/clean existing objects using
+        // the same durable retry path, and never download new photos for it.
+        const mayPublishPhotos =
+          Array.isArray(record.MlgCanUse) && record.MlgCanUse.includes("IDX") &&
+          record.InternetEntireListingDisplayYN === true;
+        // Photos otherwise arrive on the same payload via $expand=Media.
+        const mediaComplete = await syncMediaForProperty(
+          db, row.listingKey, mayPublishPhotos ? record.Media : [], progress, guard, outOfBudget,
+        );
+        if (!mediaComplete) {
+          stoppedForBudget = true;
+          break;
+        }
       }
 
       log(
@@ -671,8 +822,12 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
           `watermark stays at ${since?.toISOString() ?? "none"} and the next run repeats the query`,
       );
     }
+    const pendingCleanup = await db.select({ url: mediaCleanup.blobUrl }).from(mediaCleanup).limit(1);
+    if (progress.mediaFailed || pendingCleanup.length) {
+      throw new Error("MLS media work failed or cleanup is pending; the watermark was retained for retry.");
+    }
     const complete = !stoppedForBudget;
-    await saveState("success", complete);
+    await saveState(complete ? "success" : "failed", complete);
     log(
       `Done. ${progress.pages} page(s), ${progress.received} received: ` +
         `${progress.upserted} upserted, ${progress.deleted} deleted, ${progress.skipped} skipped.`,
@@ -708,7 +863,8 @@ export async function runSync(options: SyncOptions = {}): Promise<SyncResult> {
       next run repeats the query; rows already stored are re-upserted and
       photos already held are skipped, so no download is repeated.
     */
-    await saveState("failed", false);
+    try { await saveState("failed", false); }
+    catch { console.warn("MLS sync state was not changed after lease loss or a database failure."); }
     console.error(
       `Sync failed after ${progress.pages} page(s), ${progress.received} record(s).`,
     );

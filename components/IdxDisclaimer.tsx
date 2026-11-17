@@ -16,10 +16,13 @@ export default async function IdxDisclaimer() {
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         <p className="text-xs leading-relaxed text-mist">
           Listing data provided by OneKey<sup>®</sup> MLS. Information is deemed
-          reliable but not guaranteed and should be independently verified. All
-          properties are subject to prior sale, change, or withdrawal. Neither
+          reliable but not guaranteed and should be independently verified. This search covers Nassau, Suffolk and Queens and excludes other areas
+          served by OneKey MLS. All properties are subject to prior sale, change, or withdrawal. Neither
           the listing broker nor John Savoretti Realty shall be responsible for
           any typographical errors, misinformation, or misprints.
+          {!lastSynced && (
+            <span> A successful feed update time is unavailable. Contact the office to confirm availability.</span>
+          )}
           {lastSynced && (
             <>
               {" "}

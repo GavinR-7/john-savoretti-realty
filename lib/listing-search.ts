@@ -26,7 +26,7 @@ export function toPositiveInt(value: string | string[] | undefined): number | un
   if (raw === undefined) return undefined;
   const parsed = Number(raw);
   // Reject "abc", "-3", "2.5" and Infinity rather than passing them to SQL.
-  if (!Number.isInteger(parsed) || parsed < 0) return undefined;
+  if (!/^\d+$/.test(raw) || !Number.isSafeInteger(parsed) || parsed < 0 || parsed > 2_147_483_647) return undefined;
   return parsed;
 }
 

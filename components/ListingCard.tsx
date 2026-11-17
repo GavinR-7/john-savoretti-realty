@@ -43,7 +43,7 @@ export default function ListingCard({ listing }: { listing: Listing }) {
             <span className="sr-only">View listing: {listing.city} {listing.style}, </span>
             {formatPrice(listing.price, listing.dealType)}
           </Link>
-          <p className="hidden text-xs font-medium uppercase tracking-wider text-mist sm:block">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-mist sm:text-xs">
             MLS #{listing.mls}
           </p>
         </div>
@@ -57,6 +57,10 @@ export default function ListingCard({ listing }: { listing: Listing }) {
         <p className="line-clamp-2 text-xs leading-snug text-mist sm:line-clamp-3 sm:text-sm sm:leading-relaxed">
           {listing.description}
         </p>
+
+        {listing.status === "Coming soon" && listing.onMarketDate && (
+          <p className="text-xs text-mist">On market {listing.onMarketDate}</p>
+        )}
 
         {/* No City on the row means no area page exists — show the town as
             plain text rather than linking somewhere that 404s. */}

@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 import Link from "next/link";
 import { agents, toTelHref } from "@/data/agents";
 import { initials } from "@/data/site";
 
 
-export const metadata: Metadata = {
-  title: "Agents",
+export const metadata: Metadata = pageMetadata("/agents", {
+  title: "Our Agents",
   description:
-    "Agents with John Savoretti Realty.",
-};
+    "Meet the John Savoretti Realty agents serving Nassau and Suffolk counties from the Franklin Square and Smithtown offices.",
+});
 
 export default function AgentsPage() {
 
@@ -20,9 +21,9 @@ export default function AgentsPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brass-deep">
               Our agents
             </p>
-            <h2 className="mt-3 font-display text-3xl font-semibold text-harbor sm:text-4xl">
+            <h1 className="mt-3 font-display text-3xl font-semibold text-harbor sm:text-4xl">
               Meet our agents
-            </h2>
+            </h1>
           </div>
           <a
             href="/#contact"
@@ -46,12 +47,12 @@ export default function AgentsPage() {
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-atlantic font-display text-xl font-semibold text-brass-light">
                   {initials(agent.name)}
                 </div>
-                <h3 className="mt-4 font-display text-lg font-semibold text-harbor">
+                <h2 className="mt-4 font-display text-lg font-semibold text-harbor">
                   <Link href={`/agents/${agent.slug}`}>
                     <span className="absolute inset-0" aria-hidden="true" />
                     {agent.name}
                   </Link>
-                </h3>
+                </h2>
                 <p className="text-sm font-medium text-harbor">{agent.title}</p>
                 <p className="text-sm text-mist">{agent.office}</p>
                 {officeHref && (

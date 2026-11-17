@@ -182,6 +182,7 @@ function Lightbox({
 }) {
   const [index, setIndex] = useState(startAt);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const go = useCallback((delta: number) => {
     setIndex((i) => Math.max(0, Math.min(i + delta, photos.length - 1)));
@@ -189,7 +190,18 @@ function Lightbox({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Tab") {
+        const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? []);
+        const first = controls[0];
+        const last = controls.at(-1);
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      } else if (e.key === "Escape") onClose();
       else if (e.key === "ArrowRight") go(1);
       else if (e.key === "ArrowLeft") go(-1);
     };
@@ -219,10 +231,11 @@ function Lightbox({
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label={`${alt} — photo ${index + 1} of ${photos.length}`}
-      className="fixed inset-0 z-[100] flex flex-col bg-harbor/95"
+      className="fixed inset-0 z-[100] flex flex-col bg-harbor"
     >
       <div className="flex items-center justify-between px-4 py-3 text-white">
         <span className="text-sm font-semibold">
@@ -247,6 +260,7 @@ function Lightbox({
             src={photos[index]}
             alt={`${alt} — photo ${index + 1}`}
             priority
+            fit="contain"
             sizes="100vw"
           />
         </div>

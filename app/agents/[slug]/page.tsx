@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /*
   DYNAMIC AGENT PAGES — app/agents/[slug]/page.tsx
   One file → one page per agent (/agents/dennis-arango, etc.).
@@ -9,6 +11,7 @@
 */
 
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -28,10 +31,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const agent = agents.find((a) => a.slug === slug);
   if (!agent) return {};
 
-  return {
+  return pageMetadata(`/agents/${slug}`, {
     title: `${agent.name} — ${agent.title}`,
     description: `${agent.name}, ${agent.title} at John Savoretti Realty's ${agent.office} office. Buying or selling on Long Island? Get in touch.`,
-  };
+  });
 }
 
 export default async function AgentPage({ params }: Props) {

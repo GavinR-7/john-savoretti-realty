@@ -134,6 +134,16 @@ export const syncState = pgTable("sync_state", {
   lastRunAt: timestamp("last_run_at", { withTimezone: true }),
   lastRunStatus: text("last_run_status"),
   recordsProcessed: integer("records_processed"),
+  leaseOwner: text("lease_owner"),
+  leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+});
+
+// Revoked and unreferenced Blob objects outlive a property deletion until
+// deletion actually succeeds. This queue deliberately has no cascading FK.
+export const mediaCleanup = pgTable("media_cleanup", {
+  blobUrl: text("blob_url").primaryKey(),
+  listingKey: text("listing_key"),
+  queuedAt: timestamp("queued_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // Drizzle infers the TypeScript types from the schema above — no separate

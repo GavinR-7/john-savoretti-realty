@@ -41,9 +41,13 @@ export type Listing = {
   listAgentFullName?: string;
   listAgentMlsId?: string;
   listOfficeName?: string;
+  listOfficePhone?: string;
+  listOfficeEmail?: string;
+  onMarketDate?: string;
 };
 
 export function formatPrice(price: number, dealType: string): string {
+  if (!Number.isFinite(price) || price <= 0) return "Price on request";
   const formatted = price.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",

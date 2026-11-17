@@ -1,12 +1,8 @@
-/*
-  ROBOTS — served at /robots.txt. Allows all crawlers and points them at
-  the sitemap.
-*/
 import type { MetadataRoute } from "next";
+import { IS_PUBLIC_LAUNCH, SITE_URL } from "@/lib/site-config";
 
 export default function robots(): MetadataRoute.Robots {
-  return {
-    rules: { userAgent: "*", allow: "/" },
-    sitemap: "https://johnsavorettirealty.com/sitemap.xml",
-  };
+  return IS_PUBLIC_LAUNCH
+    ? { rules: { userAgent: "*", allow: "/", disallow: "/api/" }, sitemap: `${SITE_URL}/sitemap.xml` }
+    : { rules: { userAgent: "*", disallow: "/" } };
 }
